@@ -16,7 +16,8 @@ const BOOKS = [
     id: 'raga-vartma-candrika',
     short: 'Rāga-vartma-candrikā',
     author: 'Viśvanātha Cakravartī',
-    script: 'Sanskrit · 2 illuminations'
+    script: 'Sanskrit · 2 illuminations',
+    pdf: 'books/RagaVartmaCandrika_eng_2nd_ed.pdf'
   },
   {
     id: 'ujjvala-nilamani',
@@ -37,7 +38,7 @@ const BOOKS = [
     script: 'Bengali · 8 rays'
   },
   {
-    id: 'caitanya-caritamrita',
+    id: 'caitanya-caramitamrita',
     short: 'Caitanya-caritāmṛta',
     author: 'Kṛṣṇadāsa Kavirāja',
     script: 'Bengali · 3 līlās'
@@ -546,16 +547,53 @@ function library() {
   `);
 }
 
+
+/* =========================================================
+   BOOK OPENING
+   ========================================================= */
+
 function openBook(index) {
   state.book = index;
   state.chapter = 0;
 
-  if (BOOKS[index]?.sample) {
-    loadSampleBook();
-  } else {
-    go('reader');
+  const book = BOOKS[index];
+
+  if (!book) {
+    return;
   }
+
+  /*
+    Sample book:
+    load the structured JSON reader.
+  */
+  if (book.sample) {
+    loadSampleBook();
+    return;
+  }
+
+  /*
+    PDF book:
+    open the PDF directly from GitHub Pages.
+  */
+  if (book.pdf) {
+    save();
+
+    window.open(
+      book.pdf,
+      '_blank',
+      'noopener,noreferrer'
+    );
+
+    return;
+  }
+
+  /*
+    Books without PDF or structured content:
+    keep the existing reader behavior.
+  */
+  go('reader');
 }
+
 
 async function loadSampleBook() {
   state.loadedBook = null;
@@ -785,6 +823,57 @@ function reader() {
       <h2>${t('reader')}</h2>
       <div class="muted">
         ${t('loading')}
+      </div>
+    `);
+  }
+
+  /*
+    A PDF book is opened directly.
+    This is only a fallback in case the user somehow reaches
+    the reader screen for a PDF book.
+  */
+  if (meta.pdf) {
+    return layout(`
+      <div class="top">
+
+        <button
+          class="back"
+          onclick="go('library')">
+          ‹
+        </button>
+
+        <div style="flex:1">
+
+          <strong>
+            ${escapeHtml(meta.short)}
+          </strong>
+
+          <div class="muted">
+            ${escapeHtml(meta.author)}
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="section">
+
+        <h2>
+          ${escapeHtml(meta.short)}
+        </h2>
+
+        <p class="muted">
+          ${escapeHtml(meta.author)}
+        </p>
+
+        <button
+          class="primary"
+          onclick="window.open('${escapeAttribute(meta.pdf)}','_blank','noopener,noreferrer')">
+
+          Open PDF
+
+        </button>
+
       </div>
     `);
   }
