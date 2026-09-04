@@ -180,7 +180,9 @@ const I18N={
     backToLibrary:'Back to Library',
     openBookmark:'Open',
     removeBookmark:'Remove bookmark',
-    savedWorks:'Saved works'
+    savedWorks:'Saved works',
+    clickToOpen:'Click to open this bookmark',
+    removed:'Bookmark removed'
   },
 
   sl:{
@@ -243,7 +245,9 @@ const I18N={
     backToLibrary:'Nazaj v knjižnico',
     openBookmark:'Odpri',
     removeBookmark:'Odstrani zaznamek',
-    savedWorks:'Shranjena dela'
+    savedWorks:'Shranjena dela',
+    clickToOpen:'Klikni za odprtje tega zaznamka',
+    removed:'Zaznamek odstranjen'
   }
 };
 
@@ -581,9 +585,13 @@ function openBook(index){
   state.chapter=0;
 
   if(BOOKS[index]?.sample){
+
     loadSampleBook();
+
   }else{
+
     go('reader');
+
   }
 }
 
@@ -604,15 +612,23 @@ async function loadSampleBook(){
     );
 
     if(!response.ok){
+
       throw new Error(
         'HTTP '+response.status
       );
+
     }
 
     const data=await response.json();
 
     state.loadedBook=data;
     state.loadedBookId='sample-book';
+
+    if(
+      !Array.isArray(state.loadedBook.chapters)
+    ){
+      state.loadedBook.chapters=[];
+    }
 
     save();
     render();
@@ -659,7 +675,9 @@ function getCurrentBook(){
   if(state.book===0){
 
     if(state.loadedBook){
+
       return state.loadedBook;
+
     }
 
     return {
@@ -669,6 +687,7 @@ function getCurrentBook(){
       language:'English',
       chapters:[]
     };
+
   }
 
   const meta=BOOKS[state.book];
@@ -730,8 +749,8 @@ function isBookmarked(ref){
 
   return state.bookmarks.some(
     b=>
-      b.bookId===state.loadedBookId &&
-      b.chapter===state.chapter &&
+      b.bookId==='sample-book' &&
+      Number(b.chapter)===Number(state.chapter) &&
       b.ref===ref
   );
 }
@@ -741,8 +760,8 @@ function toggleBookmark(ref){
   const existing=
     state.bookmarks.findIndex(
       b=>
-        b.bookId===state.loadedBookId &&
-        b.chapter===state.chapter &&
+        b.bookId==='sample-book' &&
+        Number(b.chapter)===Number(state.chapter) &&
         b.ref===ref
     );
 
@@ -766,7 +785,7 @@ function toggleBookmark(ref){
 
     state.bookmarks.push({
 
-      bookId:state.loadedBookId,
+      bookId:'sample-book',
 
       bookTitle:
         book?.title ||
@@ -776,17 +795,28 @@ function toggleBookmark(ref){
         book?.author ||
         'Sample Edition',
 
-      chapter:state.chapter,
+      chapter:Number(state.chapter)||0,
 
       chapterTitle:
         chapter?.title ||
         '',
 
-      ref:ref,
+      ref:String(ref),
 
-      text:
+      english:
         verse?.english ||
+        '',
+
+      slovenian:
         verse?.slovenian ||
+        '',
+
+      sanskrit:
+        verse?.sanskrit ||
+        '',
+
+      transliteration:
+        verse?.transliteration ||
         '',
 
       created:new Date().toISOString()
@@ -796,6 +826,7 @@ function toggleBookmark(ref){
     save();
 
     toast(t('bookmarked'));
+
   }
 
   render();
@@ -810,16 +841,94 @@ async function openBookmark(index){
     return;
   }
 
+  /*
+    Vedno uporabljamo sample-book,
+    ker je to trenutno edina knjiga,
+    ki ima dejansko vsebino v JSON datoteki.
+  */
+
   state.book=0;
-  state.chapter=bookmark.chapter || 0;
   state.loadedBookId='sample-book';
-
-  await loadSampleBook();
-
-  state.chapter=bookmark.chapter || 0;
+  state.chapter=
+    Number(bookmark.chapter)||0;
+  state.screen='reader';
 
   save();
   render();
+
+  await loadSampleBook();
+
+  /*
+    loadSampleBook ponovno naloži JSON.
+    Zato poglavje nastavimo še enkrat
+    po končanem nalaganju.
+  */
+
+  state.book=0;
+  state.loadedBookId='sample-book';
+
+  const chapterCount=
+    state.loadedBook?.chapters?.length || 0;
+
+  if(chapterCount>0){
+
+    state.chapter=Math.max(
+      0,
+      Math.min(
+        Number(bookmark.chapter)||0,
+        chapterCount-1
+      )
+    );
+
+  }else{
+
+    state.chapter=0;
+
+  }
+
+  state.screen='reader';
+
+  save();
+  render();
+
+  /*
+    Poskusimo po kratkem zamiku
+    pripeljati uporabnika do konkretnega verza.
+  */
+
+  setTimeout(()=>{
+
+    const ref=String(bookmark.ref||'');
+
+    if(!ref){
+      return;
+    }
+
+    const elements=
+      document.querySelectorAll('.verse');
+
+    for(const element of elements){
+
+      const refElement=
+        element.querySelector('.ref');
+
+      if(
+        refElement &&
+        refElement.textContent.trim()===ref
+      ){
+
+        element.scrollIntoView({
+          behavior:'smooth',
+          block:'center'
+        });
+
+        break;
+      }
+
+    }
+
+  },100);
+
 }
 
 function removeBookmark(index){
@@ -835,7 +944,9 @@ function removeBookmark(index){
 
   save();
 
-  toast(t('bookmark'));
+  render();
+
+  toast(t('removed'));
 }
 
 function previousChapter(){
@@ -850,6 +961,7 @@ function previousChapter(){
     render();
 
   }
+
 }
 
 function nextChapter(){
@@ -873,6 +985,7 @@ function nextChapter(){
     updateReadingProgress();
 
     toast(t('endSection'));
+
   }
 }
 
@@ -885,7 +998,9 @@ function updateReadingProgress(){
     !book.chapters ||
     book.chapters.length===0
   ){
+
     return;
+
   }
 
   const progress=
@@ -915,6 +1030,7 @@ function reader(){
       </div>
 
     `);
+
   }
 
   if(
@@ -961,9 +1077,11 @@ function reader(){
       </div>
 
     `);
+
   }
 
   const book=getCurrentBook();
+
   const chapter=currentChapter();
 
   if(!chapter){
@@ -997,6 +1115,7 @@ function reader(){
       </div>
 
     `);
+
   }
 
   const progress=
@@ -1091,6 +1210,10 @@ function reader(){
               toggleBookmark(
                 '${escapeAttribute(v.ref)}'
               )
+            "
+            style="
+              cursor:pointer;
+              position:relative
             ">
 
             <div
@@ -1106,7 +1229,10 @@ function reader(){
 
               <div
                 class="muted"
-                style="font-size:11px">
+                style="
+                  font-size:18px;
+                  line-height:1
+                ">
 
                 ${
                   isBookmarked(v.ref)
@@ -1206,7 +1332,7 @@ function reader(){
       ${t('bookmark')}:
       ${
         state.bookmarks.filter(
-          x=>x.bookId===state.loadedBookId
+          x=>x.bookId==='sample-book'
         ).length
       }
 
@@ -1370,6 +1496,7 @@ function create(){
       </div>
 
     `);
+
   }
 
   const formTranslations={
@@ -1413,6 +1540,7 @@ function create(){
       state.lang==='sl'
       ? 'Oris predavanja'
       : 'Class outline'
+
   };
 
   return layout(`
@@ -1656,6 +1784,11 @@ function result(){
 
 function saved(){
 
+  const bookmarks=
+    Array.isArray(state.bookmarks)
+      ? state.bookmarks
+      : [];
+
   return layout(`
 
     <div class="eyebrow">
@@ -1670,7 +1803,10 @@ function saved(){
 
       <div
         class="card"
-        style="padding:18px">
+        style="
+          padding:18px;
+          margin-bottom:0
+        ">
 
         <h3>
           ${t('bookmarks')}
@@ -1680,7 +1816,7 @@ function saved(){
           class="muted"
           style="margin-top:6px">
 
-          ${state.bookmarks.length}
+          ${bookmarks.length}
 
         </div>
 
@@ -1689,7 +1825,7 @@ function saved(){
     </div>
 
     ${
-      state.bookmarks.length===0
+      bookmarks.length===0
 
       ?
 
@@ -1708,86 +1844,154 @@ function saved(){
 
       :
 
-      state.bookmarks.map((b,i)=>`
+      bookmarks.map((b,i)=>{
 
-        <div
-          class="row"
-          style="
-            align-items:flex-start;
-            cursor:default
-          ">
+        /*
+          Podpora za stare zaznamke:
+          če je bil zaznamek ustvarjen s staro
+          verzijo aplikacije, lahko nima bookTitle,
+          chapterTitle ali text.
+        */
 
-          <div class="num">
-            ★
-          </div>
+        const bookTitle=
+          b.bookTitle ||
+          'Rāgānugā Bhakti — Sample Book';
 
-          <div class="grow">
+        const chapterTitle=
+          b.chapterTitle ||
+          (
+            Number(b.chapter)===1
+              ? 'Hearing and Practice'
+              : 'The Beginning of Taste'
+          );
+
+        const ref=
+          b.ref ||
+          '';
+
+        const displayText=
+          state.lang==='sl'
+            ? (
+                b.slovenian ||
+                b.text ||
+                b.english ||
+                ''
+              )
+            : (
+                b.english ||
+                b.text ||
+                b.slovenian ||
+                ''
+              );
+
+        return `
+
+          <div
+            class="row"
+            onclick="openBookmark(${i})"
+            style="
+              align-items:flex-start;
+              cursor:pointer;
+              margin-bottom:10px
+            ">
 
             <div
+              class="num"
               style="
-                font-weight:600;
-                margin-bottom:4px
+                font-size:20px
               ">
 
-              ${b.bookTitle || ''}
+              ★
 
             </div>
 
-            <div class="muted">
+            <div class="grow">
 
-              ${b.chapterTitle || ''}
-              ·
-              ${b.ref || ''}
+              <div
+                style="
+                  font-weight:600;
+                  margin-bottom:4px
+                ">
 
-            </div>
+                ${bookTitle}
 
-            ${
-              b.text
-              ? `
-                <div
-                  style="
-                    font-size:13px;
-                    line-height:1.55;
-                    margin-top:7px
+              </div>
+
+              <div class="muted">
+
+                ${chapterTitle}
+                ·
+                ${ref}
+
+              </div>
+
+              ${
+                displayText
+                ? `
+                  <div
+                    style="
+                      font-size:13px;
+                      line-height:1.55;
+                      margin-top:8px
+                    ">
+
+                    ${displayText}
+
+                  </div>
+                `
+                : ''
+              }
+
+              <div
+                class="muted"
+                style="
+                  font-size:11px;
+                  margin-top:8px
+                ">
+
+                ${t('clickToOpen')}
+
+              </div>
+
+              <div
+                style="
+                  display:flex;
+                  gap:8px;
+                  margin-top:10px;
+                  flex-wrap:wrap
+                ">
+
+                <button
+                  class="chip on"
+                  onclick="
+                    event.stopPropagation();
+                    openBookmark(${i});
                   ">
 
-                  ${b.text}
+                  ${t('openBookmark')}
 
-                </div>
-              `
-              : ''
-            }
+                </button>
 
-            <div
-              style="
-                display:flex;
-                gap:8px;
-                margin-top:10px
-              ">
+                <button
+                  class="chip"
+                  onclick="
+                    event.stopPropagation();
+                    removeBookmark(${i});
+                  ">
 
-              <button
-                class="chip on"
-                onclick="openBookmark(${i})">
+                  ${t('removeBookmark')}
 
-                ${t('openBookmark')}
+                </button>
 
-              </button>
-
-              <button
-                class="chip"
-                onclick="removeBookmark(${i})">
-
-                ${t('removeBookmark')}
-
-              </button>
+              </div>
 
             </div>
 
           </div>
 
-        </div>
+        `;
 
-      `).join('')
+      }).join('')
     }
 
     <div class="section">
