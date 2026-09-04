@@ -1,114 +1,99 @@
-const BOOKS=[
+const BOOKS = [
   {
-    id:'sample-book',
-    short:'Rāgānugā Bhakti — Sample Book',
-    author:'Sample Edition',
-    script:'English · 2 chapters',
-    sample:true
+    id: 'sample-book',
+    short: 'Rāgānugā Bhakti — Sample Book',
+    author: 'Sample Edition',
+    script: 'English · 2 chapters',
+    sample: true
   },
   {
-    id:'bhakti-rasamrita-sindhu',
-    short:'Bhakti-rasāmṛta-sindhu',
-    author:'Rūpa Gosvāmī',
-    script:'Sanskrit · 4 divisions'
+    id: 'bhakti-rasamrita-sindhu',
+    short: 'Bhakti-rasāmṛta-sindhu',
+    author: 'Rūpa Gosvāmī',
+    script: 'Sanskrit · 4 divisions'
   },
   {
-    id:'raga-vartma-candrika',
-    short:'Rāga-vartma-candrikā',
-    author:'Viśvanātha Cakravartī',
-    script:'Sanskrit · 2 illuminations'
+    id: 'raga-vartma-candrika',
+    short: 'Rāga-vartma-candrikā',
+    author: 'Viśvanātha Cakravartī',
+    script: 'Sanskrit · 2 illuminations'
   },
   {
-    id:'ujjvala-nilamani',
-    short:'Ujjvala-nīlamaṇi',
-    author:'Rūpa Gosvāmī',
-    script:'Sanskrit · 15 chapters'
+    id: 'ujjvala-nilamani',
+    short: 'Ujjvala-nīlamaṇi',
+    author: 'Rūpa Gosvāmī',
+    script: 'Sanskrit · 15 chapters'
   },
   {
-    id:'madhurya-kadambini',
-    short:'Mādhurya-kādambinī',
-    author:'Viśvanātha Cakravartī',
-    script:'Sanskrit · 8 showers'
+    id: 'madhurya-kadambini',
+    short: 'Mādhurya-kādambinī',
+    author: 'Viśvanātha Cakravartī',
+    script: 'Sanskrit · 8 showers'
   },
   {
-    id:'prema-bhakti-candrika',
-    short:'Prema-bhakti-candrikā',
-    author:'Narottama dāsa',
-    script:'Bengali · 8 rays'
+    id: 'prema-bhakti-candrika',
+    short: 'Prema-bhakti-candrikā',
+    author: 'Narottama dāsa',
+    script: 'Bengali · 8 rays'
   },
   {
-    id:'caitanya-caramrita',
-    short:'Caitanya-caritāmṛta',
-    author:'Kṛṣṇadāsa Kavirāja',
-    script:'Bengali · 3 līlās'
+    id: 'caitanya-caritamrita',
+    short: 'Caitanya-caritāmṛta',
+    author: 'Kṛṣṇadāsa Kavirāja',
+    script: 'Bengali · 3 līlās'
   }
 ];
 
-const FALLBACK_VERSES=[
-  {
-    ref:'1.1',
-    sanskrit:'ruciḥ bhakti-pathasya hṛdayam',
-    transliteration:'ruciḥ bhakti-pathasya hṛdayam',
-    english:'Taste is the heart of the devotional path.',
-    slovenian:'Okus oziroma notranja naklonjenost je srce poti predanosti.'
-  },
-  {
-    ref:'1.2',
-    sanskrit:'śravaṇāt sa bhāvaḥ vardhate',
-    transliteration:'śravaṇāt sa bhāvaḥ vardhate',
-    english:'Through attentive hearing, that devotional mood gradually becomes stronger.',
-    slovenian:'S pozornim poslušanjem se ta notranji odnos postopoma krepi.'
-  },
-  {
-    ref:'2.1',
-    sanskrit:'śravaṇaṁ kīrtanaṁ ca',
-    transliteration:'śravaṇaṁ kīrtanaṁ ca',
-    english:'Hearing and chanting are essential parts of devotional practice.',
-    slovenian:'Poslušanje in petje sta bistvena dela predanega duhovnega praktikovanja.'
-  },
-  {
-    ref:'2.2',
-    sanskrit:'smaraṇaṁ sevayā saha',
-    transliteration:'smaraṇaṁ sevayā saha',
-    english:'Remembrance becomes deeper when joined with service.',
-    slovenian:'Spominjanje postaja globlje, ko je povezano s služenjem.'
-  }
-];
-
-const RESULTS=[
-  [
-    'Rāga-vartma-candrikā',
-    '1.5',
-    '…rāgānugā bhakti is rooted in taste, and taste follows from hearing of the moods of Vraja…',
-    'Sanskrit'
-  ],
-  [
-    'Bhakti-rasāmṛta-sindhu',
-    '1.2.270',
-    '…detachment is not the mother of this path; taste alone sets it in motion…',
-    'Sanskrit'
-  ],
-  [
-    'Mādhurya-kādambinī',
-    'Shower 3',
-    '…the creeper of devotion, once watered by hearing, bends of its own accord toward Vraja…',
-    'Sanskrit'
-  ],
-  [
-    'Prema-bhakti-candrikā',
-    'Ray 2',
-    '…keep the association of those whose taste is already awake, and your own will follow…',
-    'Bengali'
-  ],
-  [
-    'Caitanya-caritāmṛta',
-    'Madhya 22.107',
-    '…pure love is eternally established in the heart; hearing and chanting only awaken it…',
-    'Bengali'
+const FALLBACK_BOOK = {
+  id: 'sample-book',
+  title: 'Rāgānugā Bhakti — Sample Book',
+  author: 'Sample Edition',
+  language: 'English',
+  chapters: [
+    {
+      id: 'chapter-1',
+      title: 'The Beginning of Taste',
+      verses: [
+        {
+          ref: '1.1',
+          sanskrit: 'ruciḥ bhakti-pathasya hṛdayam',
+          transliteration: 'ruciḥ bhakti-pathasya hṛdayam',
+          english: 'Taste is the heart of the devotional path.',
+          slovenian: 'Okus oziroma notranja naklonjenost je srce poti predanosti.'
+        },
+        {
+          ref: '1.2',
+          sanskrit: 'śravaṇāt sa bhāvaḥ vardhate',
+          transliteration: 'śravaṇāt sa bhāvaḥ vardhate',
+          english: 'Through attentive hearing, that devotional mood gradually becomes stronger.',
+          slovenian: 'S pozornim poslušanjem se ta notranji odnos postopoma krepi.'
+        }
+      ]
+    },
+    {
+      id: 'chapter-2',
+      title: 'Hearing and Practice',
+      verses: [
+        {
+          ref: '2.1',
+          sanskrit: 'śravaṇaṁ kīrtanaṁ ca',
+          transliteration: 'śravaṇaṁ kīrtanaṁ ca',
+          english: 'Hearing and chanting are essential parts of devotional practice.',
+          slovenian: 'Poslušanje in petje sta bistvena dela predanega duhovnega praktikovanja.'
+        },
+        {
+          ref: '2.2',
+          sanskrit: 'smaraṇaṁ sevayā saha',
+          transliteration: 'smaraṇaṁ sevayā saha',
+          english: 'Remembrance becomes deeper when joined with service.',
+          slovenian: 'Spominjanje postaja globlje, ko je povezano s služenjem.'
+        }
+      ]
+    }
   ]
-];
+};
 
-const FORMS=[
+const FORMS = [
   'Article',
   'New book',
   'Poetic recitation',
@@ -119,273 +104,282 @@ const FORMS=[
   'Class outline'
 ];
 
-const I18N={
-  en:{
-    library:'Library',
-    search:'Search',
-    create:'Create',
-    saved:'My works',
-    books:'Loaded books',
-    titles:'titles',
-    collections:'Collections',
-    continue:'Continue',
-    sources:'Sources',
-    findSources:'Find sources',
-    remove:'Remove',
-    intent:'Intent',
-    form:'Form',
-    generateWork:'Generate a work',
-    generate:'Generate',
-    generatedWork:'Generated work',
-    from:'From',
-    saveWork:'Save work',
-    allBooks:'All books',
-    passages:'passages',
-    acrossBooks:'Across loaded books',
-    endSection:'End of section',
-    versesMarked:'verses marked',
-    firstIllumination:'First illumination',
-    newBook:'New book',
-    poeticRecitation:'Poetic recitation',
-    songLyrics:'Song lyrics',
-    studyNotes:'Study notes',
-    dailyReflection:'Daily reflection',
-    classOutline:'Class outline',
-    readingSelected:'Reading selected sources',
-    gathering:'Gathering relevant passages',
-    composing:'Composing in the chosen form',
-    assembling:'Assembling the source list',
-    savedToWorks:'Saved to My works',
-    english:'English',
-    slovenian:'Slovenščina',
-    sourcesCount:'sources',
-    draft:'draft',
-    noResults:'No passages found',
-    defaultIntent:'For a Sunday class of newcomers. Keep the Sanskrit terms but explain each one.',
-    sampleBook:'Sample book',
-    chapters:'chapters',
-    chapter:'Chapter',
-    previous:'Previous',
-    next:'Next',
-    loading:'Loading book…',
-    bookLoaded:'Book loaded',
-    reader:'Reader',
-    showScript:'Show Sanskrit',
-    hideScript:'Hide Sanskrit',
-    bookmark:'Bookmark',
-    bookmarked:'Bookmarked',
-    bookmarks:'Bookmarks',
-    noBookmarks:'No bookmarks yet',
-    loadingFailed:'Could not load the sample book.',
-    backToLibrary:'Back to Library',
-    openBookmark:'Open',
-    removeBookmark:'Remove bookmark',
-    savedWorks:'Saved works',
-    clickToOpen:'Click to open this bookmark',
-    removed:'Bookmark removed'
+const I18N = {
+  en: {
+    library: 'Library',
+    search: 'Search',
+    create: 'Create',
+    saved: 'My works',
+    books: 'Loaded books',
+    titles: 'titles',
+    collections: 'Collections',
+    continue: 'Continue',
+    sources: 'Sources',
+    findSources: 'Find sources',
+    remove: 'Remove',
+    intent: 'Intent',
+    form: 'Form',
+    generateWork: 'Generate a work',
+    generate: 'Generate',
+    generatedWork: 'Generated work',
+    from: 'From',
+    saveWork: 'Save work',
+    allBooks: 'All books',
+    passages: 'passages',
+    acrossBooks: 'Search loaded books…',
+    endSection: 'End of section',
+    versesMarked: 'verses marked',
+    firstIllumination: 'First illumination',
+    newBook: 'New book',
+    poeticRecitation: 'Poetic recitation',
+    songLyrics: 'Song lyrics',
+    studyNotes: 'Study notes',
+    dailyReflection: 'Daily reflection',
+    classOutline: 'Class outline',
+    readingSelected: 'Reading selected sources',
+    gathering: 'Gathering relevant passages',
+    composing: 'Composing in the chosen form',
+    assembling: 'Assembling the source list',
+    savedToWorks: 'Saved to My works',
+    english: 'English',
+    slovenian: 'Slovenščina',
+    sourcesCount: 'sources',
+    draft: 'draft',
+    noResults: 'No passages found',
+    searching: 'Searching the loaded books…',
+    defaultIntent: 'For a Sunday class of newcomers. Keep the Sanskrit terms but explain each one.',
+    sampleBook: 'Sample book',
+    chapters: 'chapters',
+    chapter: 'Chapter',
+    previous: 'Previous',
+    next: 'Next',
+    loading: 'Loading book…',
+    bookLoaded: 'Book loaded',
+    reader: 'Reader',
+    showScript: 'Show Sanskrit',
+    hideScript: 'Hide Sanskrit',
+    bookmark: 'Bookmark',
+    bookmarked: 'Bookmarked',
+    removed: 'Bookmark removed',
+    loadingFailed: 'Could not load the sample book.',
+    backToLibrary: 'Back to Library',
+    noBookmarks: 'No bookmarks yet.',
+    openBookmark: 'Open',
+    removeBookmark: 'Remove bookmark',
+    savedWorks: 'Saved works',
+    resultIn: 'in',
+    chapterResult: 'Chapter',
+    searchHint: 'Search Sanskrit, transliteration, English or Slovenian text.'
   },
 
-  sl:{
-    library:'Knjižnica',
-    search:'Iskanje',
-    create:'Ustvari',
-    saved:'Moja dela',
-    books:'Naložene knjige',
-    titles:'naslovov',
-    collections:'Zbirke',
-    continue:'Nadaljuj',
-    sources:'Viri',
-    findSources:'Poišči vire',
-    remove:'Odstrani',
-    intent:'Namen',
-    form:'Oblika',
-    generateWork:'Ustvari delo',
-    generate:'Ustvari',
-    generatedWork:'Ustvarjeno delo',
-    from:'Iz',
-    saveWork:'Shrani delo',
-    allBooks:'Vse knjige',
-    passages:'odlomkov',
-    acrossBooks:'Po naloženih knjigah',
-    endSection:'Konec odseka',
-    versesMarked:'označenih verzov',
-    firstIllumination:'Prva iluminacija',
-    newBook:'Nova knjiga',
-    poeticRecitation:'Pesniška recitacija',
-    songLyrics:'Besedilo pesmi',
-    studyNotes:'Študijski zapiski',
-    dailyReflection:'Dnevni razmislek',
-    classOutline:'Oris predavanja',
-    readingSelected:'Branje izbranih virov',
-    gathering:'Iskanje ustreznih odlomkov',
-    composing:'Sestavljanje v izbrani obliki',
-    assembling:'Pripravljanje seznama virov',
-    savedToWorks:'Shranjeno med Moja dela',
-    english:'English',
-    slovenian:'Slovenščina',
-    sourcesCount:'virov',
-    draft:'osnutek',
-    noResults:'Odlomkov ni bilo mogoče najti',
-    defaultIntent:'Za nedeljski razred začetnikov. Ohranite sanskrtske izraze, vendar vsakega razložite.',
-    sampleBook:'Vzorčna knjiga',
-    chapters:'poglavij',
-    chapter:'Poglavje',
-    previous:'Prejšnje',
-    next:'Naslednje',
-    loading:'Nalaganje knjige…',
-    bookLoaded:'Knjiga naložena',
-    reader:'Bralnik',
-    showScript:'Prikaži sanskrt',
-    hideScript:'Skrij sanskrt',
-    bookmark:'Zaznamek',
-    bookmarked:'Zaznamovano',
-    bookmarks:'Zaznamki',
-    noBookmarks:'Zaznamkov še ni',
-    loadingFailed:'Vzorčne knjige ni bilo mogoče naložiti.',
-    backToLibrary:'Nazaj v knjižnico',
-    openBookmark:'Odpri',
-    removeBookmark:'Odstrani zaznamek',
-    savedWorks:'Shranjena dela',
-    clickToOpen:'Klikni za odprtje tega zaznamka',
-    removed:'Zaznamek odstranjen'
+  sl: {
+    library: 'Knjižnica',
+    search: 'Iskanje',
+    create: 'Ustvari',
+    saved: 'Moja dela',
+    books: 'Naložene knjige',
+    titles: 'naslovov',
+    collections: 'Zbirke',
+    continue: 'Nadaljuj',
+    sources: 'Viri',
+    findSources: 'Poišči vire',
+    remove: 'Odstrani',
+    intent: 'Namen',
+    form: 'Oblika',
+    generateWork: 'Ustvari delo',
+    generate: 'Ustvari',
+    generatedWork: 'Ustvarjeno delo',
+    from: 'Iz',
+    saveWork: 'Shrani delo',
+    allBooks: 'Vse knjige',
+    passages: 'odlomkov',
+    acrossBooks: 'Išči po naloženih knjigah…',
+    endSection: 'Konec odseka',
+    versesMarked: 'označenih verzov',
+    firstIllumination: 'Prva iluminacija',
+    newBook: 'Nova knjiga',
+    poeticRecitation: 'Pesniška recitacija',
+    songLyrics: 'Besedilo pesmi',
+    studyNotes: 'Študijski zapiski',
+    dailyReflection: 'Dnevni razmislek',
+    classOutline: 'Oris predavanja',
+    readingSelected: 'Branje izbranih virov',
+    gathering: 'Iskanje ustreznih odlomkov',
+    composing: 'Sestavljanje v izbrani obliki',
+    assembling: 'Pripravljanje seznama virov',
+    savedToWorks: 'Shranjeno med Moja dela',
+    english: 'English',
+    slovenian: 'Slovenščina',
+    sourcesCount: 'virov',
+    draft: 'osnutek',
+    noResults: 'Odlomkov ni bilo mogoče najti',
+    searching: 'Iskanje po naloženih knjigah…',
+    defaultIntent: 'Za nedeljski razred začetnikov. Ohranite sanskrtske izraze, vendar vsakega razložite.',
+    sampleBook: 'Vzorčna knjiga',
+    chapters: 'poglavij',
+    chapter: 'Poglavje',
+    previous: 'Prejšnje',
+    next: 'Naslednje',
+    loading: 'Nalaganje knjige…',
+    bookLoaded: 'Knjiga naložena',
+    reader: 'Bralnik',
+    showScript: 'Prikaži sanskrt',
+    hideScript: 'Skrij sanskrt',
+    bookmark: 'Zaznamek',
+    bookmarked: 'Zaznamovano',
+    removed: 'Zaznamek odstranjen',
+    loadingFailed: 'Vzorčne knjige ni bilo mogoče naložiti.',
+    backToLibrary: 'Nazaj v knjižnico',
+    noBookmarks: 'Zaenkrat ni zaznamkov.',
+    openBookmark: 'Odpri',
+    removeBookmark: 'Odstrani zaznamek',
+    savedWorks: 'Shranjena dela',
+    resultIn: 'v',
+    chapterResult: 'Poglavje',
+    searchHint: 'Išči po sanskrtu, transliteraciji, angleškem ali slovenskem besedilu.'
   }
 };
 
-let state={
-  screen:'library',
-  book:0,
-  query:'ruci',
-  filter:'All books',
-  form:'Article',
-  sources:[0,1,2,3],
-  script:true,
-  toast:'',
-  working:false,
-  step:0,
-  intent:'For a Sunday class of newcomers. Keep the Sanskrit terms but explain each one.',
-  lang:'en',
-  loadedBook:null,
-  loadedBookId:null,
-  chapter:0,
-  bookmarks:[]
+let state = {
+  screen: 'library',
+  book: 0,
+  query: '',
+  filter: 'All books',
+  form: 'Article',
+  sources: [0, 1, 2, 3],
+  script: true,
+  toast: '',
+  working: false,
+  step: 0,
+  intent: 'For a Sunday class of newcomers. Keep the Sanskrit terms but explain each one.',
+  lang: 'en',
+  loadedBook: null,
+  loadedBookId: null,
+  chapter: 0,
+  bookmarks: [],
+  searchIndex: [],
+  searchReady: false,
+  searchLoading: false
 };
 
-try{
+try {
   Object.assign(
     state,
-    JSON.parse(localStorage.getItem('rb-state')||'{}')
+    JSON.parse(localStorage.getItem('rb-state') || '{}')
   );
-}catch(e){}
+} catch (e) {}
 
-if(!state.lang){
-  state.lang='en';
+if (!state.lang) {
+  state.lang = 'en';
 }
 
-if(!Array.isArray(state.bookmarks)){
-  state.bookmarks=[];
+if (!Array.isArray(state.bookmarks)) {
+  state.bookmarks = [];
 }
 
-function t(key){
+if (!Array.isArray(state.sources)) {
+  state.sources = [0, 1, 2, 3];
+}
+
+function t(key) {
   return I18N[state.lang]?.[key] || I18N.en[key] || key;
 }
 
-function save(){
-  localStorage.setItem(
-    'rb-state',
-    JSON.stringify(state)
-  );
+function save() {
+  localStorage.setItem('rb-state', JSON.stringify(state));
 }
 
-function setLanguage(lang){
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
-  state.lang=lang;
+function escapeAttribute(value) {
+  return String(value ?? '')
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'");
+}
 
-  state.intent=
-    lang==='sl'
-      ? I18N.sl.defaultIntent
-      : I18N.en.defaultIntent;
+function setLanguage(lang) {
+  state.lang = lang;
+
+  if (lang === 'sl') {
+    state.intent = I18N.sl.defaultIntent;
+  } else {
+    state.intent = I18N.en.defaultIntent;
+  }
 
   save();
   render();
 }
 
-function go(screen){
-
-  state.screen=screen;
-
+function go(screen) {
+  state.screen = screen;
   save();
   render();
+
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
 }
 
-function toast(msg){
-
-  state.toast=msg;
+function toast(message) {
+  state.toast = message;
   render();
 
-  setTimeout(()=>{
-    state.toast='';
+  setTimeout(() => {
+    state.toast = '';
     render();
-  },1800);
+  }, 1800);
 }
 
-function languageSelector(){
-
+function languageSelector() {
   return `
     <div class="language-selector">
-
       <button
-        class="chip ${state.lang==='en'?'on':''}"
+        class="chip ${state.lang === 'en' ? 'on' : ''}"
         onclick="setLanguage('en')">
         🇬🇧 EN
       </button>
 
       <button
-        class="chip ${state.lang==='sl'?'on':''}"
+        class="chip ${state.lang === 'sl' ? 'on' : ''}"
         onclick="setLanguage('sl')">
         🇸🇮 SL
       </button>
-
     </div>
   `;
 }
 
-function nav(){
-
+function nav() {
   return `
     <nav class="nav">
-
       ${[
-        ['library','▦',t('library')],
-        ['search','⌕',t('search')],
-        ['create','✦',t('create')],
-        ['saved','♡',t('saved')]
-      ].map(([k,i,l])=>`
-
+        ['library', '▦', t('library')],
+        ['search', '⌕', t('search')],
+        ['create', '✦', t('create')],
+        ['saved', '♡', t('saved')]
+      ].map(([key, icon, label]) => `
         <button
-          class="${state.screen===k?'active':''}"
-          onclick="go('${k}')">
-
-          ${i}
-
-          <small>
-            ${l}
-          </small>
-
+          class="${state.screen === key ? 'active' : ''}"
+          onclick="go('${key}')">
+          ${icon}
+          <small>${label}</small>
         </button>
-
       `).join('')}
-
     </nav>
   `;
 }
 
-function layout(body){
-
+function layout(body) {
   return `
     <div class="shell">
-
       <main class="phone">
-
         <div class="content">
           ${languageSelector()}
           ${body}
@@ -395,27 +389,19 @@ function layout(body){
 
         ${
           state.toast
-          ? `<div class="toast">${state.toast}</div>`
-          : ''
+            ? `<div class="toast">${escapeHtml(state.toast)}</div>`
+            : ''
         }
-
       </main>
-
     </div>
   `;
 }
 
-function library(){
-
+function library() {
   return layout(`
+    <div class="eyebrow">${t('library')}</div>
 
-    <div class="eyebrow">
-      ${t('library')}
-    </div>
-
-    <h1>
-      Rāgānugā Bhakti
-    </h1>
+    <h1>Rāgānugā Bhakti</h1>
 
     <div
       class="section resume"
@@ -437,12 +423,8 @@ function library(){
         class="progress"
         style="margin-top:12px">
 
-        <i
-          style="width:${getProgress(0)}%">
-        </i>
-
+        <i style="width:${getProgress(0)}%"></i>
       </div>
-
     </div>
 
     <div class="section">
@@ -455,46 +437,37 @@ function library(){
           margin-bottom:12px
         ">
 
-        <h3>
-          ${t('books')}
-        </h3>
+        <h3>${t('books')}</h3>
 
         <span class="muted">
           ${BOOKS.length} ${t('titles')}
         </span>
-
       </div>
 
       <div class="grid">
 
-        ${BOOKS.map((b,i)=>`
-
+        ${BOOKS.map((book, index) => `
           <div
             class="book"
-            onclick="openBook(${i})">
+            onclick="openBook(${index})">
 
             <div class="cover">
-
               <strong>
-                ${b.short}
+                ${escapeHtml(book.short)}
               </strong>
 
               <span class="muted">
-                ${b.script}
+                ${escapeHtml(book.script)}
               </span>
-
             </div>
 
             <div class="bookname">
-              ${b.author}
+              ${escapeHtml(book.author)}
             </div>
-
           </div>
-
         `).join('')}
 
       </div>
-
     </div>
 
     <div class="section">
@@ -522,490 +495,174 @@ function library(){
           '2 generated works',
           'saved'
         ]
-      ].map(x=>`
-
+      ].map(item => `
         <div
           class="row"
-          onclick="go('${x[3]}')">
+          onclick="go('${item[3]}')">
 
           <div class="num">
-            ${x[0]}
+            ${item[0]}
           </div>
 
           <div class="grow">
 
             <div>
               ${
-                state.lang==='sl'
-                ? ({
-                    'Sources for the Sunday class':
-                      'Viri za nedeljski razred',
-                    'On ruci and lobha':
-                      'O ruci in lobhi',
-                    'Kirtan drafts':
-                      'Osnutki kirtana'
-                  }[x[1]] || x[1])
-                : x[1]
+                state.lang === 'sl'
+                  ? ({
+                      'Sources for the Sunday class':
+                        'Viri za nedeljski razred',
+                      'On ruci and lobha':
+                        'O ruci in lobhi',
+                      'Kirtan drafts':
+                        'Osnutki kirtana'
+                    }[item[1]] || item[1])
+                  : item[1]
               }
             </div>
 
             <div class="muted">
               ${
-                state.lang==='sl'
-                ? ({
-                    '4 books · 11 verses marked':
-                      '4 knjige · 11 označenih verzov',
-                    '7 verses across 3 books':
-                      '7 verzov v 3 knjigah',
-                    '2 generated works':
-                      '2 ustvarjeni deli'
-                  }[x[2]] || x[2])
-                : x[2]
+                state.lang === 'sl'
+                  ? ({
+                      '4 books · 11 verses marked':
+                        '4 knjige · 11 označenih verzov',
+                      '7 verses across 3 books':
+                        '7 verzov v 3 knjigah',
+                      '2 generated works':
+                        '2 ustvarjeni deli'
+                    }[item[2]] || item[2])
+                  : item[2]
               }
             </div>
 
           </div>
 
-          <span>
-            ›
-          </span>
-
+          <span>›</span>
         </div>
-
       `).join('')}
 
     </div>
-
   `);
 }
 
-function openBook(index){
+function openBook(index) {
+  state.book = index;
+  state.chapter = 0;
 
-  state.book=index;
-  state.chapter=0;
-
-  if(BOOKS[index]?.sample){
-
+  if (BOOKS[index]?.sample) {
     loadSampleBook();
-
-  }else{
-
+  } else {
     go('reader');
-
   }
 }
 
-async function loadSampleBook(){
-
-  state.loadedBook=null;
-  state.loadedBookId='sample-book';
-  state.screen='reader';
+async function loadSampleBook() {
+  state.loadedBook = null;
+  state.loadedBookId = 'sample-book';
+  state.screen = 'reader';
 
   save();
   render();
 
-  try{
+  try {
+    const response = await fetch('data/sample-book.json', {
+      cache: 'no-store'
+    });
 
-    const response=await fetch(
-      'data/sample-book.json',
-      {cache:'no-store'}
-    );
-
-    if(!response.ok){
-
-      throw new Error(
-        'HTTP '+response.status
-      );
-
+    if (!response.ok) {
+      throw new Error('HTTP ' + response.status);
     }
 
-    const data=await response.json();
+    const data = await response.json();
 
-    state.loadedBook=data;
-    state.loadedBookId='sample-book';
+    state.loadedBook = data;
+    state.loadedBookId = data.id || 'sample-book';
 
-    if(
-      !Array.isArray(state.loadedBook.chapters)
-    ){
-      state.loadedBook.chapters=[];
+    if (
+      state.chapter < 0 ||
+      state.chapter >= (data.chapters || []).length
+    ) {
+      state.chapter = 0;
     }
 
     save();
     render();
 
-  }catch(error){
+  } catch (error) {
+    console.error('Sample book loading error:', error);
 
-    console.error(
-      'Sample book loading error:',
-      error
-    );
-
-    state.loadedBook={
-      id:'sample-book',
-      title:'Rāgānugā Bhakti — Sample Book',
-      author:'Sample Edition',
-      language:'English',
-
-      chapters:[
-        {
-          id:'chapter-1',
-          title:'The Beginning of Taste',
-          verses:FALLBACK_VERSES.slice(0,2)
-        },
-        {
-          id:'chapter-2',
-          title:'Hearing and Practice',
-          verses:FALLBACK_VERSES.slice(2,4)
-        }
-      ]
-    };
+    state.loadedBook = FALLBACK_BOOK;
+    state.loadedBookId = 'sample-book';
 
     save();
     render();
 
-    setTimeout(()=>{
+    setTimeout(() => {
       toast(t('loadingFailed'));
-    },100);
-
+    }, 100);
   }
 }
 
-function getCurrentBook(){
-
-  if(state.book===0){
-
-    if(state.loadedBook){
-
+function getCurrentBook() {
+  if (state.book === 0) {
+    if (state.loadedBook) {
       return state.loadedBook;
-
     }
 
-    return {
-      id:'sample-book',
-      title:'Rāgānugā Bhakti — Sample Book',
-      author:'Sample Edition',
-      language:'English',
-      chapters:[]
-    };
-
+    return FALLBACK_BOOK;
   }
 
-  const meta=BOOKS[state.book];
+  const meta = BOOKS[state.book];
 
   return {
-    id:meta?.id || '',
-    title:meta?.short || '',
-    author:meta?.author || '',
-    language:meta?.script || '',
-    chapters:[]
+    id: meta?.id || '',
+    title: meta?.short || '',
+    author: meta?.author || '',
+    language: meta?.script || '',
+    chapters: []
   };
 }
 
-function getProgress(bookIndex){
+function getProgress(bookIndex) {
+  const book = BOOKS[bookIndex];
 
-  const book=BOOKS[bookIndex];
-
-  if(!book){
+  if (!book) {
     return 0;
   }
 
-  const key='rb-progress-'+book.id;
-
-  const value=Number(
-    localStorage.getItem(key)||0
+  const value = Number(
+    localStorage.getItem('rb-progress-' + book.id) || 0
   );
 
-  return Math.max(
-    0,
-    Math.min(100,value)
-  );
+  return Math.max(0, Math.min(100, value));
 }
 
-function setProgress(bookId,value){
-
-  const safeValue=Math.max(
+function setProgress(bookId, value) {
+  const safeValue = Math.max(
     0,
-    Math.min(100,Math.round(value))
+    Math.min(100, Math.round(value))
   );
 
   localStorage.setItem(
-    'rb-progress-'+bookId,
+    'rb-progress-' + bookId,
     String(safeValue)
   );
 }
 
-function currentChapter(){
+function updateReadingProgress() {
+  const book = getCurrentBook();
 
-  const book=getCurrentBook();
-
-  if(!book.chapters){
-    return null;
-  }
-
-  return book.chapters[state.chapter] || null;
-}
-
-function isBookmarked(ref){
-
-  return state.bookmarks.some(
-    b=>
-      b.bookId==='sample-book' &&
-      Number(b.chapter)===Number(state.chapter) &&
-      b.ref===ref
-  );
-}
-
-function toggleBookmark(ref){
-
-  const existing=
-    state.bookmarks.findIndex(
-      b=>
-        b.bookId==='sample-book' &&
-        Number(b.chapter)===Number(state.chapter) &&
-        b.ref===ref
-    );
-
-  if(existing>=0){
-
-    state.bookmarks.splice(existing,1);
-
-    save();
-
-    toast(t('bookmark'));
-
-  }else{
-
-    const book=getCurrentBook();
-    const chapter=currentChapter();
-
-    const verse=
-      chapter?.verses?.find(
-        v=>v.ref===ref
-      );
-
-    state.bookmarks.push({
-
-      bookId:'sample-book',
-
-      bookTitle:
-        book?.title ||
-        'Rāgānugā Bhakti — Sample Book',
-
-      author:
-        book?.author ||
-        'Sample Edition',
-
-      chapter:Number(state.chapter)||0,
-
-      chapterTitle:
-        chapter?.title ||
-        '',
-
-      ref:String(ref),
-
-      english:
-        verse?.english ||
-        '',
-
-      slovenian:
-        verse?.slovenian ||
-        '',
-
-      sanskrit:
-        verse?.sanskrit ||
-        '',
-
-      transliteration:
-        verse?.transliteration ||
-        '',
-
-      created:new Date().toISOString()
-
-    });
-
-    save();
-
-    toast(t('bookmarked'));
-
-  }
-
-  render();
-}
-
-async function openBookmark(index){
-
-  const bookmark=
-    state.bookmarks[index];
-
-  if(!bookmark){
-    return;
-  }
-
-  /*
-    Vedno uporabljamo sample-book,
-    ker je to trenutno edina knjiga,
-    ki ima dejansko vsebino v JSON datoteki.
-  */
-
-  state.book=0;
-  state.loadedBookId='sample-book';
-  state.chapter=
-    Number(bookmark.chapter)||0;
-  state.screen='reader';
-
-  save();
-  render();
-
-  await loadSampleBook();
-
-  /*
-    loadSampleBook ponovno naloži JSON.
-    Zato poglavje nastavimo še enkrat
-    po končanem nalaganju.
-  */
-
-  state.book=0;
-  state.loadedBookId='sample-book';
-
-  const chapterCount=
-    state.loadedBook?.chapters?.length || 0;
-
-  if(chapterCount>0){
-
-    state.chapter=Math.max(
-      0,
-      Math.min(
-        Number(bookmark.chapter)||0,
-        chapterCount-1
-      )
-    );
-
-  }else{
-
-    state.chapter=0;
-
-  }
-
-  state.screen='reader';
-
-  save();
-  render();
-
-  /*
-    Poskusimo po kratkem zamiku
-    pripeljati uporabnika do konkretnega verza.
-  */
-
-  setTimeout(()=>{
-
-    const ref=String(bookmark.ref||'');
-
-    if(!ref){
-      return;
-    }
-
-    const elements=
-      document.querySelectorAll('.verse');
-
-    for(const element of elements){
-
-      const refElement=
-        element.querySelector('.ref');
-
-      if(
-        refElement &&
-        refElement.textContent.trim()===ref
-      ){
-
-        element.scrollIntoView({
-          behavior:'smooth',
-          block:'center'
-        });
-
-        break;
-      }
-
-    }
-
-  },100);
-
-}
-
-function removeBookmark(index){
-
-  if(
-    index<0 ||
-    index>=state.bookmarks.length
-  ){
-    return;
-  }
-
-  state.bookmarks.splice(index,1);
-
-  save();
-
-  render();
-
-  toast(t('removed'));
-}
-
-function previousChapter(){
-
-  if(state.chapter>0){
-
-    state.chapter--;
-
-    updateReadingProgress();
-
-    save();
-    render();
-
-  }
-
-}
-
-function nextChapter(){
-
-  const book=getCurrentBook();
-
-  if(
-    book.chapters &&
-    state.chapter<book.chapters.length-1
-  ){
-
-    state.chapter++;
-
-    updateReadingProgress();
-
-    save();
-    render();
-
-  }else{
-
-    updateReadingProgress();
-
-    toast(t('endSection'));
-
-  }
-}
-
-function updateReadingProgress(){
-
-  const book=getCurrentBook();
-
-  if(
+  if (
     !book ||
-    !book.chapters ||
-    book.chapters.length===0
-  ){
-
+    !Array.isArray(book.chapters) ||
+    book.chapters.length === 0
+  ) {
     return;
-
   }
 
-  const progress=
-    ((state.chapter+1)/
-    book.chapters.length)*100;
+  const progress =
+    ((state.chapter + 1) / book.chapters.length) * 100;
 
   setProgress(
     book.id || 'sample-book',
@@ -1013,33 +670,127 @@ function updateReadingProgress(){
   );
 }
 
-function reader(){
+function currentChapter() {
+  const book = getCurrentBook();
 
-  const b=BOOKS[state.book];
+  if (!book || !Array.isArray(book.chapters)) {
+    return null;
+  }
 
-  if(!b){
+  return book.chapters[state.chapter] || null;
+}
 
+function isBookmarked(ref) {
+  return state.bookmarks.some(bookmark =>
+    bookmark.bookId === state.loadedBookId &&
+    Number(bookmark.chapter) === Number(state.chapter) &&
+    String(bookmark.ref) === String(ref)
+  );
+}
+
+function toggleBookmark(ref) {
+  const existing = state.bookmarks.findIndex(bookmark =>
+    bookmark.bookId === state.loadedBookId &&
+    Number(bookmark.chapter) === Number(state.chapter) &&
+    String(bookmark.ref) === String(ref)
+  );
+
+  if (existing >= 0) {
+    state.bookmarks.splice(existing, 1);
+
+    save();
+    render();
+
+    setTimeout(() => {
+      toast(t('removed'));
+    }, 50);
+
+    return;
+  }
+
+  const book = getCurrentBook();
+  const chapter = currentChapter();
+  const verse = (chapter?.verses || []).find(
+    item => String(item.ref) === String(ref)
+  );
+
+  state.bookmarks.push({
+    bookId: state.loadedBookId || book.id || 'sample-book',
+    bookTitle: book.title || 'Rāgānugā Bhakti — Sample Book',
+    author: book.author || 'Sample Edition',
+    chapter: Number(state.chapter),
+    chapterTitle: chapter?.title || '',
+    ref: String(ref),
+    english: verse?.english || '',
+    slovenian: verse?.slovenian || '',
+    sanskrit: verse?.sanskrit || '',
+    transliteration: verse?.transliteration || '',
+    created: new Date().toISOString()
+  });
+
+  save();
+  render();
+
+  setTimeout(() => {
+    toast(t('bookmarked'));
+  }, 50);
+}
+
+function previousChapter() {
+  if (state.chapter > 0) {
+    state.chapter--;
+
+    updateReadingProgress();
+
+    save();
+    render();
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  }
+}
+
+function nextChapter() {
+  const book = getCurrentBook();
+
+  if (
+    book.chapters &&
+    state.chapter < book.chapters.length - 1
+  ) {
+    state.chapter++;
+
+    updateReadingProgress();
+
+    save();
+    render();
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+
+  } else {
+    updateReadingProgress();
+    toast(t('endSection'));
+  }
+}
+
+function reader() {
+  const meta = BOOKS[state.book];
+
+  if (!meta) {
     return layout(`
-
-      <h2>
-        ${t('reader')}
-      </h2>
-
+      <h2>${t('reader')}</h2>
       <div class="muted">
         ${t('loading')}
       </div>
-
     `);
-
   }
 
-  if(
-    b.sample &&
-    !state.loadedBook
-  ){
-
+  if (meta.sample && !state.loadedBook) {
     return layout(`
-
       <div class="top">
 
         <button
@@ -1051,15 +802,14 @@ function reader(){
         <div style="flex:1">
 
           <strong>
-            ${b.short}
+            ${escapeHtml(meta.short)}
           </strong>
 
           <div class="muted">
-            ${b.author}
+            ${escapeHtml(meta.author)}
           </div>
 
         </div>
-
       </div>
 
       <div class="working">
@@ -1075,19 +825,14 @@ function reader(){
         </div>
 
       </div>
-
     `);
-
   }
 
-  const book=getCurrentBook();
+  const book = getCurrentBook();
+  const chapter = currentChapter();
 
-  const chapter=currentChapter();
-
-  if(!chapter){
-
+  if (!chapter) {
     return layout(`
-
       <div class="top">
 
         <button
@@ -1099,32 +844,28 @@ function reader(){
         <div style="flex:1">
 
           <strong>
-            ${book.title}
+            ${escapeHtml(book.title)}
           </strong>
 
           <div class="muted">
-            ${book.author}
+            ${escapeHtml(book.author)}
           </div>
 
         </div>
-
       </div>
 
       <div class="muted">
         ${t('loading')}
       </div>
-
     `);
-
   }
 
-  const progress=
+  const progress =
     book.chapters.length
-    ? Math.round(
-        ((state.chapter+1)/
-        book.chapters.length)*100
-      )
-    : 0;
+      ? Math.round(
+          ((state.chapter + 1) / book.chapters.length) * 100
+        )
+      : 0;
 
   return layout(`
 
@@ -1139,29 +880,23 @@ function reader(){
       <div style="flex:1">
 
         <strong>
-          ${book.title}
+          ${escapeHtml(book.title)}
         </strong>
 
         <div class="muted">
-          ${book.author}
+          ${escapeHtml(book.author)}
         </div>
 
       </div>
 
       <button
-        class="chip ${state.script?'on':''}"
+        class="chip ${state.script ? 'on' : ''}"
         onclick="
           state.script=!state.script;
           save();
           render();
         ">
-
-        ${
-          state.script
-          ? 'A अ'
-          : 'A'
-        }
-
+        ${state.script ? 'A अ' : 'A'}
       </button>
 
     </div>
@@ -1176,7 +911,7 @@ function reader(){
 
       <span>
         ${t('chapter')}
-        ${state.chapter+1}
+        ${state.chapter + 1}
         /
         ${book.chapters.length}
       </span>
@@ -1192,29 +927,19 @@ function reader(){
       style="margin-bottom:28px">
 
       <i style="width:${progress}%"></i>
-
     </div>
 
     <h2>
-      ${chapter.title}
+      ${escapeHtml(chapter.title)}
     </h2>
 
     <div class="section">
 
       ${
-        (chapter.verses || []).map(v=>`
-
+        (chapter.verses || []).map(verse => `
           <div
             class="verse"
-            onclick="
-              toggleBookmark(
-                '${escapeAttribute(v.ref)}'
-              )
-            "
-            style="
-              cursor:pointer;
-              position:relative
-            ">
+            onclick="toggleBookmark('${escapeAttribute(verse.ref)}')">
 
             <div
               style="
@@ -1224,71 +949,62 @@ function reader(){
               ">
 
               <div class="ref">
-                ${v.ref}
+                ${escapeHtml(verse.ref)}
               </div>
 
               <div
                 class="muted"
-                style="
-                  font-size:18px;
-                  line-height:1
-                ">
+                style="font-size:11px">
 
                 ${
-                  isBookmarked(v.ref)
-                  ? '★'
-                  : '☆'
+                  isBookmarked(verse.ref)
+                    ? '★'
+                    : '☆'
                 }
 
               </div>
-
             </div>
 
             ${
               state.script
-              ? `
+                ? `
+                  <div class="deva">
+                    ${escapeHtml(verse.sanskrit || '')}
+                  </div>
 
-                <div class="deva">
-                  ${v.sanskrit || ''}
-                </div>
-
-                <div class="translit">
-                  ${v.transliteration || ''}
-                </div>
-
-              `
-              : ''
+                  <div class="translit">
+                    ${escapeHtml(verse.transliteration || '')}
+                  </div>
+                `
+                : ''
             }
 
             <div class="english">
-
               ${
-                state.lang==='sl'
-                ? (
-                    v.slovenian ||
-                    v.english ||
-                    ''
-                  )
-                : (
-                    v.english ||
-                    ''
-                  )
+                state.lang === 'sl'
+                  ? escapeHtml(
+                      verse.slovenian ||
+                      verse.english ||
+                      ''
+                    )
+                  : escapeHtml(
+                      verse.english ||
+                      ''
+                    )
               }
-
             </div>
 
             ${
-              v.note
-              ? `
-                <div class="note">
-                  ${v.note}
-                </div>
-              `
-              : ''
+              verse.note
+                ? `
+                  <div class="note">
+                    ${escapeHtml(verse.note)}
+                  </div>
+                `
+                : ''
             }
 
           </div>
-
         `).join('')
       }
 
@@ -1332,7 +1048,7 @@ function reader(){
       ${t('bookmark')}:
       ${
         state.bookmarks.filter(
-          x=>x.bookId==='sample-book'
+          item => item.bookId === state.loadedBookId
         ).length
       }
 
@@ -1341,27 +1057,167 @@ function reader(){
   `);
 }
 
-function search(){
 
-  const q=
-    state.query.toLowerCase();
+/* =========================================================
+   SEARCH
+   ========================================================= */
 
-  const rs=
-    RESULTS.filter(r=>
-      (
-        r.join(' ')
-          .toLowerCase()
-          .includes(q)
-        ||
-        !q
-      )
-      &&
-      (
-        state.filter==='All books'
-        ||
-        state.filter===r[3]
-      )
+async function buildSearchIndex() {
+  if (state.searchReady || state.searchLoading) {
+    return;
+  }
+
+  state.searchLoading = true;
+
+  try {
+    const response = await fetch(
+      'data/sample-book.json',
+      {
+        cache: 'no-store'
+      }
     );
+
+    if (!response.ok) {
+      throw new Error('HTTP ' + response.status);
+    }
+
+    const book = await response.json();
+
+    const results = [];
+
+    (book.chapters || []).forEach((chapter, chapterIndex) => {
+
+      (chapter.verses || []).forEach(verse => {
+
+        results.push({
+          bookId: book.id,
+          bookTitle: book.title,
+          author: book.author,
+          chapterIndex,
+          chapterTitle: chapter.title,
+          ref: verse.ref,
+          sanskrit: verse.sanskrit || '',
+          transliteration: verse.transliteration || '',
+          english: verse.english || '',
+          slovenian: verse.slovenian || ''
+        });
+
+      });
+
+    });
+
+    state.searchIndex = results;
+    state.searchReady = true;
+
+  } catch (error) {
+
+    console.error(
+      'Search index loading error:',
+      error
+    );
+
+    const book = FALLBACK_BOOK;
+    const results = [];
+
+    (book.chapters || []).forEach((chapter, chapterIndex) => {
+
+      (chapter.verses || []).forEach(verse => {
+
+        results.push({
+          bookId: book.id,
+          bookTitle: book.title,
+          author: book.author,
+          chapterIndex,
+          chapterTitle: chapter.title,
+          ref: verse.ref,
+          sanskrit: verse.sanskrit || '',
+          transliteration: verse.transliteration || '',
+          english: verse.english || '',
+          slovenian: verse.slovenian || ''
+        });
+
+      });
+
+    });
+
+    state.searchIndex = results;
+    state.searchReady = true;
+
+  } finally {
+    state.searchLoading = false;
+
+    if (state.screen === 'search') {
+      render();
+    }
+  }
+}
+
+function setSearchQuery(value) {
+  state.query = value;
+  save();
+  render();
+}
+
+function setSearchFilter(value) {
+  state.filter = value;
+  save();
+  render();
+}
+
+function search() {
+
+  if (!state.searchReady && !state.searchLoading) {
+    buildSearchIndex();
+  }
+
+  if (!state.searchReady) {
+
+    return layout(`
+      <h2>${t('search')}</h2>
+
+      <input
+        class="search"
+        value="${escapeAttribute(state.query)}"
+        oninput="setSearchQuery(this.value)"
+        placeholder="${t('acrossBooks')}">
+
+      <div
+        class="muted"
+        style="margin-top:20px">
+
+        ${t('searching')}
+
+      </div>
+    `);
+  }
+
+  const query = state.query
+    .trim()
+    .toLowerCase();
+
+  let results = state.searchIndex;
+
+  if (query) {
+
+    results = results.filter(item => {
+
+      const text = [
+        item.bookTitle,
+        item.author,
+        item.chapterTitle,
+        item.ref,
+        item.sanskrit,
+        item.transliteration,
+        item.english,
+        item.slovenian
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      return text.includes(query);
+    });
+
+  }
 
   return layout(`
 
@@ -1372,34 +1228,33 @@ function search(){
     <input
       class="search"
       value="${escapeAttribute(state.query)}"
-      oninput="
-        state.query=this.value;
-        save();
-        render();
-      "
+      oninput="setSearchQuery(this.value)"
       placeholder="${t('acrossBooks')}">
+
+    <div
+      class="muted"
+      style="margin-top:8px;margin-bottom:16px">
+
+      ${t('searchHint')}
+
+    </div>
 
     <div class="chips">
 
       ${[
-        'All books',
-        'Sanskrit',
-        'Bengali'
-      ].map(f=>`
+        ['All books', t('allBooks')],
+        ['English', 'English'],
+        ['Slovenian', 'Slovenščina'],
+        ['Sanskrit', 'Sanskrit']
+      ].map(([value, label]) => `
 
         <button
-          class="chip ${state.filter===f?'on':''}"
-          onclick="
-            state.filter='${f}';
-            save();
-            render();
-          ">
+          class="chip ${
+            state.filter === value ? 'on' : ''
+          }"
+          onclick="setSearchFilter('${escapeAttribute(value)}')">
 
-          ${
-            f==='All books'
-            ? t('allBooks')
-            : f
-          }
+          ${label}
 
         </button>
 
@@ -1411,64 +1266,197 @@ function search(){
       class="muted"
       style="margin-bottom:8px">
 
-      ${rs.length}
+      ${results.length}
       ${t('passages')}
 
     </div>
 
     ${
-      rs.length
-
-      ?
-
-      rs.map(r=>`
-
-        <div
-          class="result"
-          onclick="
-            state.book=
-              BOOKS.findIndex(
-                b=>r[0]===b.short
-              );
-            go('reader');
-          ">
-
-          <div class="booktitle">
-            ${r[0]} · ${r[1]}
-          </div>
-
-          <div class="muted">
-            ${r[3]}
-          </div>
+      results.length
+        ? results.map((result, index) => `
 
           <div
-            style="
-              font-size:13px;
-              line-height:1.55;
-              margin-top:4px
-            ">
+            class="result"
+            onclick="openSearchResult(${index})">
 
-            ${r[2]}
+            <div class="booktitle">
+              ${escapeHtml(result.bookTitle)}
+              ·
+              ${escapeHtml(result.ref)}
+            </div>
+
+            <div class="muted">
+              ${escapeHtml(t('chapterResult'))}
+              ${result.chapterIndex + 1}
+              ·
+              ${escapeHtml(result.chapterTitle)}
+            </div>
+
+            <div
+              style="
+                font-size:13px;
+                line-height:1.55;
+                margin-top:4px
+              ">
+
+              ${
+                state.lang === 'sl'
+                  ? escapeHtml(
+                      result.slovenian ||
+                      result.english
+                    )
+                  : escapeHtml(
+                      result.english
+                    )
+              }
+
+            </div>
+
+            <div
+              class="muted"
+              style="
+                margin-top:7px;
+                font-size:11px
+              ">
+
+              ${escapeHtml(result.sanskrit)}
+
+            </div>
 
           </div>
 
-        </div>
+        `).join('')
 
-      `).join('')
-
-      :
-
-      `<div class="muted">
-        ${t('noResults')}
-      </div>`
+        : `
+          <div class="muted">
+            ${t('noResults')}
+          </div>
+        `
     }
 
   `);
 }
 
-function create(){
+function openSearchResult(index) {
 
-  if(state.working){
+  const visibleResults = getVisibleSearchResults();
+
+  const result = visibleResults[index];
+
+  if (!result) {
+    return;
+  }
+
+  state.book = 0;
+  state.loadedBookId = 'sample-book';
+  state.chapter = Number(result.chapterIndex) || 0;
+  state.screen = 'reader';
+
+  save();
+  render();
+
+  if (
+    !state.loadedBook ||
+    state.loadedBook.id !== result.bookId
+  ) {
+
+    loadSampleBook().then(() => {
+
+      state.chapter =
+        Number(result.chapterIndex) || 0;
+
+      save();
+      render();
+
+      scrollToVerse(result.ref);
+
+    });
+
+  } else {
+
+    setTimeout(() => {
+      scrollToVerse(result.ref);
+    }, 100);
+
+  }
+}
+
+function getVisibleSearchResults() {
+
+  const query = state.query
+    .trim()
+    .toLowerCase();
+
+  let results = state.searchIndex;
+
+  if (query) {
+
+    results = results.filter(item => {
+
+      const text = [
+        item.bookTitle,
+        item.author,
+        item.chapterTitle,
+        item.ref,
+        item.sanskrit,
+        item.transliteration,
+        item.english,
+        item.slovenian
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      return text.includes(query);
+    });
+
+  }
+
+  return results;
+}
+
+function scrollToVerse(ref) {
+
+  setTimeout(() => {
+
+    const verses =
+      document.querySelectorAll('.verse');
+
+    for (const verse of verses) {
+
+      const reference =
+        verse.querySelector('.ref');
+
+      if (
+        reference &&
+        reference.textContent.trim() === String(ref)
+      ) {
+
+        verse.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+
+        verse.style.outline = '2px solid currentColor';
+
+        setTimeout(() => {
+          verse.style.outline = '';
+        }, 1800);
+
+        break;
+      }
+    }
+
+  }, 150);
+}
+
+
+/* =========================================================
+   CREATE
+   ========================================================= */
+
+function create() {
+
+  if (state.working) {
 
     return layout(`
 
@@ -1496,51 +1484,49 @@ function create(){
       </div>
 
     `);
-
   }
 
-  const formTranslations={
+  const formTranslations = {
 
     'Article':
-      state.lang==='sl'
-      ? 'Članek'
-      : 'Article',
+      state.lang === 'sl'
+        ? 'Članek'
+        : 'Article',
 
     'New book':
-      state.lang==='sl'
-      ? 'Nova knjiga'
-      : 'New book',
+      state.lang === 'sl'
+        ? 'Nova knjiga'
+        : 'New book',
 
     'Poetic recitation':
-      state.lang==='sl'
-      ? 'Pesniška recitacija'
-      : 'Poetic recitation',
+      state.lang === 'sl'
+        ? 'Pesniška recitacija'
+        : 'Poetic recitation',
 
     'Song lyrics':
-      state.lang==='sl'
-      ? 'Besedilo pesmi'
-      : 'Song lyrics',
+      state.lang === 'sl'
+        ? 'Besedilo pesmi'
+        : 'Song lyrics',
 
     'Study notes':
-      state.lang==='sl'
-      ? 'Študijski zapiski'
-      : 'Study notes',
+      state.lang === 'sl'
+        ? 'Študijski zapiski'
+        : 'Study notes',
 
     'Daily reflection':
-      state.lang==='sl'
-      ? 'Dnevni razmislek'
-      : 'Daily reflection',
+      state.lang === 'sl'
+        ? 'Dnevni razmislek'
+        : 'Daily reflection',
 
     'Q&A':
-      state.lang==='sl'
-      ? 'Vprašanja in odgovori'
-      : 'Q&A',
+      state.lang === 'sl'
+        ? 'Vprašanja in odgovori'
+        : 'Q&A',
 
     'Class outline':
-      state.lang==='sl'
-      ? 'Oris predavanja'
-      : 'Class outline'
-
+      state.lang === 'sl'
+        ? 'Oris predavanja'
+        : 'Class outline'
   };
 
   return layout(`
@@ -1563,24 +1549,25 @@ function create(){
         class="formgrid"
         style="margin-top:10px">
 
-        ${FORMS.map(f=>`
+        ${FORMS.map(form => `
 
           <button
-            class="select ${state.form===f?'on':''}"
+            class="select ${
+              state.form === form ? 'on' : ''
+            }"
             onclick="
-              state.form='${f}';
+              state.form='${escapeAttribute(form)}';
               save();
               render();
             ">
 
-            ${formTranslations[f]}
+            ${formTranslations[form]}
 
           </button>
 
         `).join('')}
 
       </div>
-
     </div>
 
     <div class="card">
@@ -1589,20 +1576,19 @@ function create(){
         ${t('sources')}
       </h3>
 
-      ${state.sources.map(i=>{
+      ${state.sources.map(index => {
 
-        const book=BOOKS[i];
+        const book = BOOKS[index];
 
-        if(!book){
+        if (!book) {
           return '';
         }
 
         return `
-
           <div class="source">
 
             <span>
-              ${book.short}
+              ${escapeHtml(book.short)}
             </span>
 
             <button
@@ -1610,7 +1596,7 @@ function create(){
               onclick="
                 state.sources=
                   state.sources.filter(
-                    x=>x!==${i}
+                    x=>x!==${index}
                   );
                 save();
                 render();
@@ -1621,7 +1607,6 @@ function create(){
             </button>
 
           </div>
-
         `;
 
       }).join('')}
@@ -1649,7 +1634,7 @@ function create(){
         oninput="
           state.intent=this.value;
           save();
-        ">${state.intent}</textarea>
+        ">${escapeHtml(state.intent)}</textarea>
 
     </div>
 
@@ -1665,35 +1650,35 @@ function create(){
   `);
 }
 
-function generate(){
+function generate() {
 
-  state.working=true;
-  state.step=0;
+  state.working = true;
+  state.step = 0;
 
   render();
 
-  const timer=setInterval(()=>{
+  const timer = setInterval(() => {
 
     state.step++;
 
-    if(state.step>=4){
+    if (state.step >= 4) {
 
       clearInterval(timer);
 
-      state.working=false;
+      state.working = false;
 
       go('result');
 
-    }else{
+    } else {
 
       render();
 
     }
 
-  },650);
+  }, 650);
 }
 
-function result(){
+function result() {
 
   return layout(`
 
@@ -1712,10 +1697,12 @@ function result(){
         </strong>
 
         <div class="muted">
+
           ${t('from')}
           ${state.sources.length}
           ${t('sourcesCount')}
           · English
+
         </div>
 
       </div>
@@ -1733,21 +1720,17 @@ function result(){
 
     <div class="section">
 
-      ${
-        [
-          'The Gosvāmī literature is unusually precise about where spontaneous devotion starts. It starts with a taste that appears in the heart after hearing about the moods of the residents of Vraja.',
+      <p class="english">
+        The Gosvāmī literature is unusually precise about where spontaneous devotion starts. It starts with a taste that appears in the heart after hearing about the moods of the residents of Vraja.
+      </p>
 
-          'Viśvanātha Cakravartī makes the sequence explicit: hearing produces greed, greed produces eligibility, and practice then takes the shape of rāgānugā.',
+      <p class="english">
+        Viśvanātha Cakravartī makes the sequence explicit: hearing produces greed, greed produces eligibility, and practice then takes the shape of rāgānugā.
+      </p>
 
-          'Continue hearing and singing, keep the association of those in whom the taste is already awake, and let the perfected identity be a matter of meditation rather than announcement.'
-        ]
-        .map(x=>`
-          <p class="english">
-            ${x}
-          </p>
-        `)
-        .join('')
-      }
+      <p class="english">
+        Continue hearing and singing, keep the association of those in whom the taste is already awake, and let the perfected identity be a matter of meditation rather than announcement.
+      </p>
 
     </div>
 
@@ -1762,8 +1745,17 @@ function result(){
         style="margin-top:10px">
 
         ${
-          state.sources.map((i,n)=>
-            `${n+1}. ${BOOKS[i]?.short || ''} — ${BOOKS[i]?.author || ''}`
+          state.sources.map(
+            (index, number) =>
+              `${number + 1}. ${
+                escapeHtml(
+                  BOOKS[index]?.short || ''
+                )
+              } — ${
+                escapeHtml(
+                  BOOKS[index]?.author || ''
+                )
+              }`
           ).join('<br>')
         }
 
@@ -1773,7 +1765,7 @@ function result(){
 
     <button
       class="primary"
-      onclick="toast('${t('savedToWorks')}')">
+      onclick="toast('${escapeAttribute(t('savedToWorks'))}')">
 
       ${t('saveWork')}
 
@@ -1782,18 +1774,82 @@ function result(){
   `);
 }
 
-function saved(){
 
-  const bookmarks=
-    Array.isArray(state.bookmarks)
-      ? state.bookmarks
-      : [];
+/* =========================================================
+   SAVED / BOOKMARKS
+   ========================================================= */
+
+function openBookmark(index) {
+
+  const bookmark = state.bookmarks[index];
+
+  if (!bookmark) {
+    return;
+  }
+
+  state.book = 0;
+  state.loadedBookId = bookmark.bookId || 'sample-book';
+  state.chapter = Number(bookmark.chapter) || 0;
+  state.screen = 'reader';
+
+  save();
+  render();
+
+  loadSampleBook().then(() => {
+
+    const book = getCurrentBook();
+
+    if (
+      book.chapters &&
+      book.chapters.length
+    ) {
+
+      state.chapter = Math.max(
+        0,
+        Math.min(
+          state.chapter,
+          book.chapters.length - 1
+        )
+      );
+
+    } else {
+
+      state.chapter = 0;
+
+    }
+
+    save();
+    render();
+
+    scrollToVerse(bookmark.ref);
+
+  });
+}
+
+function removeBookmark(index) {
+
+  if (
+    index < 0 ||
+    index >= state.bookmarks.length
+  ) {
+    return;
+  }
+
+  state.bookmarks.splice(index, 1);
+
+  save();
+  render();
+
+  setTimeout(() => {
+    toast(t('removed'));
+  }, 50);
+}
+
+function saved() {
+
+  const bookmarks = state.bookmarks;
 
   return layout(`
-
-    <div class="eyebrow">
-      ${t('savedWorks')}
-    </div>
 
     <h2>
       ${t('saved')}
@@ -1801,222 +1857,191 @@ function saved(){
 
     <div class="section">
 
+      <div class="row">
+
+        <div class="num">
+          ★
+        </div>
+
+        <div class="grow">
+
+          <div>
+            ${t('bookmark')}
+          </div>
+
+          <div class="muted">
+            ${bookmarks.length}
+          </div>
+
+        </div>
+
+      </div>
+
+      ${
+        bookmarks.length
+          ? bookmarks.map((bookmark, index) => `
+
+            <div
+              class="row"
+              style="
+                cursor:pointer;
+                align-items:flex-start
+              "
+              onclick="openBookmark(${index})">
+
+              <div class="num">
+                ★
+              </div>
+
+              <div class="grow">
+
+                <div>
+                  ${escapeHtml(
+                    bookmark.bookTitle ||
+                    'Rāgānugā Bhakti — Sample Book'
+                  )}
+                </div>
+
+                <div class="muted">
+                  ${escapeHtml(
+                    bookmark.chapterTitle ||
+                    `${t('chapter')} ${Number(bookmark.chapter || 0) + 1}`
+                  )}
+                  ·
+                  ${escapeHtml(bookmark.ref || '')}
+                </div>
+
+                <div
+                  style="
+                    margin-top:7px;
+                    line-height:1.5
+                  ">
+
+                  ${
+                    state.lang === 'sl'
+                      ? escapeHtml(
+                          bookmark.slovenian ||
+                          bookmark.english ||
+                          ''
+                        )
+                      : escapeHtml(
+                          bookmark.english ||
+                          ''
+                        )
+                  }
+
+                </div>
+
+                <div
+                  style="
+                    display:flex;
+                    gap:8px;
+                    margin-top:10px
+                  ">
+
+                  <button
+                    class="chip on"
+                    onclick="
+                      event.stopPropagation();
+                      openBookmark(${index});
+                    ">
+
+                    ${t('openBookmark')}
+
+                  </button>
+
+                  <button
+                    class="chip"
+                    onclick="
+                      event.stopPropagation();
+                      removeBookmark(${index});
+                    ">
+
+                    ${t('removeBookmark')}
+
+                  </button>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          `).join('')
+
+          : `
+            <div
+              class="muted"
+              style="padding:18px 0">
+
+              ${t('noBookmarks')}
+
+            </div>
+          `
+      }
+
+    </div>
+
+    <div class="row">
+
+      <div class="num">
+        A
+      </div>
+
       <div
-        class="card"
-        style="
-          padding:18px;
-          margin-bottom:0
-        ">
+        class="grow"
+        onclick="go('result')"
+        style="cursor:pointer">
 
-        <h3>
-          ${t('bookmarks')}
-        </h3>
+        <div>
+          Taste Before Rule:
+          How Rāgānugā Bhakti Begins
+        </div>
 
-        <div
-          class="muted"
-          style="margin-top:6px">
-
-          ${bookmarks.length}
-
+        <div class="muted">
+          ${state.sources.length}
+          ${t('sourcesCount')}
+          · ${t('draft')}
         </div>
 
       </div>
 
     </div>
 
-    ${
-      bookmarks.length===0
+    <div class="row">
 
-      ?
+      <div class="num">
+        K
+      </div>
 
-      `
-        <div
-          class="muted"
-          style="
-            padding:30px 10px;
-            text-align:center
-          ">
+      <div class="grow">
 
-          ${t('noBookmarks')}
-
-        </div>
-      `
-
-      :
-
-      bookmarks.map((b,i)=>{
-
-        /*
-          Podpora za stare zaznamke:
-          če je bil zaznamek ustvarjen s staro
-          verzijo aplikacije, lahko nima bookTitle,
-          chapterTitle ali text.
-        */
-
-        const bookTitle=
-          b.bookTitle ||
-          'Rāgānugā Bhakti — Sample Book';
-
-        const chapterTitle=
-          b.chapterTitle ||
-          (
-            Number(b.chapter)===1
-              ? 'Hearing and Practice'
-              : 'The Beginning of Taste'
-          );
-
-        const ref=
-          b.ref ||
-          '';
-
-        const displayText=
-          state.lang==='sl'
-            ? (
-                b.slovenian ||
-                b.text ||
-                b.english ||
-                ''
-              )
-            : (
-                b.english ||
-                b.text ||
-                b.slovenian ||
-                ''
-              );
-
-        return `
-
-          <div
-            class="row"
-            onclick="openBookmark(${i})"
-            style="
-              align-items:flex-start;
-              cursor:pointer;
-              margin-bottom:10px
-            ">
-
-            <div
-              class="num"
-              style="
-                font-size:20px
-              ">
-
-              ★
-
-            </div>
-
-            <div class="grow">
-
-              <div
-                style="
-                  font-weight:600;
-                  margin-bottom:4px
-                ">
-
-                ${bookTitle}
-
-              </div>
-
-              <div class="muted">
-
-                ${chapterTitle}
-                ·
-                ${ref}
-
-              </div>
-
-              ${
-                displayText
-                ? `
-                  <div
-                    style="
-                      font-size:13px;
-                      line-height:1.55;
-                      margin-top:8px
-                    ">
-
-                    ${displayText}
-
-                  </div>
-                `
-                : ''
-              }
-
-              <div
-                class="muted"
-                style="
-                  font-size:11px;
-                  margin-top:8px
-                ">
-
-                ${t('clickToOpen')}
-
-              </div>
-
-              <div
-                style="
-                  display:flex;
-                  gap:8px;
-                  margin-top:10px;
-                  flex-wrap:wrap
-                ">
-
-                <button
-                  class="chip on"
-                  onclick="
-                    event.stopPropagation();
-                    openBookmark(${i});
-                  ">
-
-                  ${t('openBookmark')}
-
-                </button>
-
-                <button
-                  class="chip"
-                  onclick="
-                    event.stopPropagation();
-                    removeBookmark(${i});
-                  ">
-
-                  ${t('removeBookmark')}
-
-                </button>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        `;
-
-      }).join('')
-    }
-
-    <div class="section">
-
-      <div
-        class="row"
-        onclick="go('result')">
-
-        <div class="num">
-          A
+        <div>
+          Śrī Rādhā-viraha
         </div>
 
-        <div class="grow">
+        <div class="muted">
+          Rāga Bhairavī · 6 lines
+        </div>
 
-          <div>
-            Taste Before Rule:
-            How Rāgānugā Bhakti Begins
-          </div>
+      </div>
 
-          <div class="muted">
-            ${state.sources.length}
-            ${t('sourcesCount')}
-            · ${t('draft')}
-          </div>
+    </div>
 
+    <div class="row">
+
+      <div class="num">
+        B
+      </div>
+
+      <div class="grow">
+
+        <div>
+          The Two Forms of Practice
+        </div>
+
+        <div class="muted">
+          Outline · 9 chapters
         </div>
 
       </div>
@@ -2026,52 +2051,72 @@ function saved(){
   `);
 }
 
-function escapeAttribute(value){
 
-  return String(value)
-    .replace(/\\/g,'\\\\')
-    .replace(/'/g,"\\'");
-}
+/* =========================================================
+   RENDER
+   ========================================================= */
 
-function render(){
+function render() {
 
-  const root=
+  const root =
     document.getElementById('app');
 
-  if(!root){
+  if (!root) {
     return;
   }
 
-  root.innerHTML=
-
-    state.screen==='library'
+  root.innerHTML =
+    state.screen === 'library'
       ? library()
 
-    : state.screen==='reader'
+    : state.screen === 'reader'
       ? reader()
 
-    : state.screen==='search'
+    : state.screen === 'search'
       ? search()
 
-    : state.screen==='create'
+    : state.screen === 'create'
       ? create()
 
-    : state.screen==='result'
+    : state.screen === 'result'
       ? result()
 
-    : saved();
+    : state.screen === 'saved'
+      ? saved()
+
+    : library();
 }
 
-window.go=go;
-window.generate=generate;
-window.setLanguage=setLanguage;
-window.openBook=openBook;
-window.previousChapter=previousChapter;
-window.nextChapter=nextChapter;
-window.toggleBookmark=toggleBookmark;
-window.openBookmark=openBookmark;
-window.removeBookmark=removeBookmark;
-window.loadSampleBook=loadSampleBook;
-window.state=state;
+
+/* =========================================================
+   GLOBAL FUNCTIONS
+   ========================================================= */
+
+window.setLanguage = setLanguage;
+window.go = go;
+window.toast = toast;
+window.openBook = openBook;
+
+window.previousChapter = previousChapter;
+window.nextChapter = nextChapter;
+
+window.toggleBookmark = toggleBookmark;
+
+window.openBookmark = openBookmark;
+window.removeBookmark = removeBookmark;
+
+window.setSearchQuery = setSearchQuery;
+window.setSearchFilter = setSearchFilter;
+window.openSearchResult = openSearchResult;
+
+window.generate = generate;
+
+window.save = save;
+window.render = render;
+
+
+/* =========================================================
+   START
+   ========================================================= */
 
 render();
