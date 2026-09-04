@@ -37,7 +37,7 @@ const BOOKS=[
     script:'Bengali · 8 rays'
   },
   {
-    id:'caitanya-caritamrita',
+    id:'caitanya-caramrita',
     short:'Caitanya-caritāmṛta',
     author:'Kṛṣṇadāsa Kavirāja',
     script:'Bengali · 3 līlās'
@@ -174,8 +174,13 @@ const I18N={
     hideScript:'Hide Sanskrit',
     bookmark:'Bookmark',
     bookmarked:'Bookmarked',
+    bookmarks:'Bookmarks',
+    noBookmarks:'No bookmarks yet',
     loadingFailed:'Could not load the sample book.',
-    backToLibrary:'Back to Library'
+    backToLibrary:'Back to Library',
+    openBookmark:'Open',
+    removeBookmark:'Remove bookmark',
+    savedWorks:'Saved works'
   },
 
   sl:{
@@ -232,8 +237,13 @@ const I18N={
     hideScript:'Skrij sanskrt',
     bookmark:'Zaznamek',
     bookmarked:'Zaznamovano',
+    bookmarks:'Zaznamki',
+    noBookmarks:'Zaznamkov še ni',
     loadingFailed:'Vzorčne knjige ni bilo mogoče naložiti.',
-    backToLibrary:'Nazaj v knjižnico'
+    backToLibrary:'Nazaj v knjižnico',
+    openBookmark:'Odpri',
+    removeBookmark:'Odstrani zaznamek',
+    savedWorks:'Shranjena dela'
   }
 };
 
@@ -250,11 +260,9 @@ let state={
   step:0,
   intent:'For a Sunday class of newcomers. Keep the Sanskrit terms but explain each one.',
   lang:'en',
-
   loadedBook:null,
   loadedBookId:null,
   chapter:0,
-
   bookmarks:[]
 };
 
@@ -278,29 +286,35 @@ function t(key){
 }
 
 function save(){
-  localStorage.setItem('rb-state',JSON.stringify(state));
+  localStorage.setItem(
+    'rb-state',
+    JSON.stringify(state)
+  );
 }
 
 function setLanguage(lang){
+
   state.lang=lang;
 
-  if(lang==='sl'){
-    state.intent=t('defaultIntent');
-  }else{
-    state.intent=t('defaultIntent');
-  }
+  state.intent=
+    lang==='sl'
+      ? I18N.sl.defaultIntent
+      : I18N.en.defaultIntent;
 
   save();
   render();
 }
 
 function go(screen){
+
   state.screen=screen;
+
   save();
   render();
 }
 
 function toast(msg){
+
   state.toast=msg;
   render();
 
@@ -311,8 +325,10 @@ function toast(msg){
 }
 
 function languageSelector(){
+
   return `
     <div class="language-selector">
+
       <button
         class="chip ${state.lang==='en'?'on':''}"
         onclick="setLanguage('en')">
@@ -324,36 +340,48 @@ function languageSelector(){
         onclick="setLanguage('sl')">
         🇸🇮 SL
       </button>
+
     </div>
   `;
 }
 
 function nav(){
+
   return `
     <nav class="nav">
+
       ${[
         ['library','▦',t('library')],
         ['search','⌕',t('search')],
         ['create','✦',t('create')],
         ['saved','♡',t('saved')]
-      ].map(([k,i,l])=>
-        `
-          <button
-            class="${state.screen===k?'active':''}"
-            onclick="go('${k}')">
-            ${i}
-            <small>${l}</small>
-          </button>
-        `
-      ).join('')}
+      ].map(([k,i,l])=>`
+
+        <button
+          class="${state.screen===k?'active':''}"
+          onclick="go('${k}')">
+
+          ${i}
+
+          <small>
+            ${l}
+          </small>
+
+        </button>
+
+      `).join('')}
+
     </nav>
   `;
 }
 
 function layout(body){
+
   return `
     <div class="shell">
+
       <main class="phone">
+
         <div class="content">
           ${languageSelector()}
           ${body}
@@ -361,10 +389,14 @@ function layout(body){
 
         ${nav()}
 
-        ${state.toast
+        ${
+          state.toast
           ? `<div class="toast">${state.toast}</div>`
-          : ''}
+          : ''
+        }
+
       </main>
+
     </div>
   `;
 }
@@ -372,9 +404,14 @@ function layout(body){
 function library(){
 
   return layout(`
-    <div class="eyebrow">${t('library')}</div>
 
-    <h1>Rāgānugā Bhakti</h1>
+    <div class="eyebrow">
+      ${t('library')}
+    </div>
+
+    <h1>
+      Rāgānugā Bhakti
+    </h1>
 
     <div
       class="section resume"
@@ -399,6 +436,7 @@ function library(){
         <i
           style="width:${getProgress(0)}%">
         </i>
+
       </div>
 
     </div>
@@ -413,7 +451,9 @@ function library(){
           margin-bottom:12px
         ">
 
-        <h3>${t('books')}</h3>
+        <h3>
+          ${t('books')}
+        </h3>
 
         <span class="muted">
           ${BOOKS.length} ${t('titles')}
@@ -450,6 +490,7 @@ function library(){
         `).join('')}
 
       </div>
+
     </div>
 
     <div class="section">
@@ -521,17 +562,21 @@ function library(){
 
           </div>
 
-          <span>›</span>
+          <span>
+            ›
+          </span>
 
         </div>
 
       `).join('')}
 
     </div>
+
   `);
 }
 
 function openBook(index){
+
   state.book=index;
   state.chapter=0;
 
@@ -553,12 +598,15 @@ async function loadSampleBook(){
 
   try{
 
-    const response=await fetch('data/sample-book.json',{
-      cache:'no-store'
-    });
+    const response=await fetch(
+      'data/sample-book.json',
+      {cache:'no-store'}
+    );
 
     if(!response.ok){
-      throw new Error('HTTP '+response.status);
+      throw new Error(
+        'HTTP '+response.status
+      );
     }
 
     const data=await response.json();
@@ -571,13 +619,17 @@ async function loadSampleBook(){
 
   }catch(error){
 
-    console.error('Sample book loading error:',error);
+    console.error(
+      'Sample book loading error:',
+      error
+    );
 
     state.loadedBook={
       id:'sample-book',
       title:'Rāgānugā Bhakti — Sample Book',
       author:'Sample Edition',
       language:'English',
+
       chapters:[
         {
           id:'chapter-1',
@@ -632,13 +684,22 @@ function getCurrentBook(){
 
 function getProgress(bookIndex){
 
-  const key='rb-progress-'+BOOKS[bookIndex].id;
+  const book=BOOKS[bookIndex];
+
+  if(!book){
+    return 0;
+  }
+
+  const key='rb-progress-'+book.id;
 
   const value=Number(
     localStorage.getItem(key)||0
   );
 
-  return Math.max(0,Math.min(100,value));
+  return Math.max(
+    0,
+    Math.min(100,value)
+  );
 }
 
 function setProgress(bookId,value){
@@ -677,12 +738,13 @@ function isBookmarked(ref){
 
 function toggleBookmark(ref){
 
-  const existing=state.bookmarks.findIndex(
-    b=>
-      b.bookId===state.loadedBookId &&
-      b.chapter===state.chapter &&
-      b.ref===ref
-  );
+  const existing=
+    state.bookmarks.findIndex(
+      b=>
+        b.bookId===state.loadedBookId &&
+        b.chapter===state.chapter &&
+        b.ref===ref
+    );
 
   if(existing>=0){
 
@@ -694,11 +756,41 @@ function toggleBookmark(ref){
 
   }else{
 
+    const book=getCurrentBook();
+    const chapter=currentChapter();
+
+    const verse=
+      chapter?.verses?.find(
+        v=>v.ref===ref
+      );
+
     state.bookmarks.push({
+
       bookId:state.loadedBookId,
+
+      bookTitle:
+        book?.title ||
+        'Rāgānugā Bhakti — Sample Book',
+
+      author:
+        book?.author ||
+        'Sample Edition',
+
       chapter:state.chapter,
+
+      chapterTitle:
+        chapter?.title ||
+        '',
+
       ref:ref,
+
+      text:
+        verse?.english ||
+        verse?.slovenian ||
+        '',
+
       created:new Date().toISOString()
+
     });
 
     save();
@@ -707,6 +799,43 @@ function toggleBookmark(ref){
   }
 
   render();
+}
+
+async function openBookmark(index){
+
+  const bookmark=
+    state.bookmarks[index];
+
+  if(!bookmark){
+    return;
+  }
+
+  state.book=0;
+  state.chapter=bookmark.chapter || 0;
+  state.loadedBookId='sample-book';
+
+  await loadSampleBook();
+
+  state.chapter=bookmark.chapter || 0;
+
+  save();
+  render();
+}
+
+function removeBookmark(index){
+
+  if(
+    index<0 ||
+    index>=state.bookmarks.length
+  ){
+    return;
+  }
+
+  state.bookmarks.splice(index,1);
+
+  save();
+
+  toast(t('bookmark'));
 }
 
 function previousChapter(){
@@ -760,7 +889,8 @@ function updateReadingProgress(){
   }
 
   const progress=
-    ((state.chapter+1)/book.chapters.length)*100;
+    ((state.chapter+1)/
+    book.chapters.length)*100;
 
   setProgress(
     book.id || 'sample-book',
@@ -773,15 +903,24 @@ function reader(){
   const b=BOOKS[state.book];
 
   if(!b){
+
     return layout(`
-      <h2>${t('reader')}</h2>
+
+      <h2>
+        ${t('reader')}
+      </h2>
+
       <div class="muted">
         ${t('loading')}
       </div>
+
     `);
   }
 
-  if(b.sample && !state.loadedBook){
+  if(
+    b.sample &&
+    !state.loadedBook
+  ){
 
     return layout(`
 
@@ -825,7 +964,6 @@ function reader(){
   }
 
   const book=getCurrentBook();
-
   const chapter=currentChapter();
 
   if(!chapter){
@@ -918,7 +1056,8 @@ function reader(){
       ">
 
       <span>
-        ${t('chapter')} ${state.chapter+1}
+        ${t('chapter')}
+        ${state.chapter+1}
         /
         ${book.chapters.length}
       </span>
@@ -929,8 +1068,12 @@ function reader(){
 
     </div>
 
-    <div class="progress" style="margin-bottom:28px">
+    <div
+      class="progress"
+      style="margin-bottom:28px">
+
       <i style="width:${progress}%"></i>
+
     </div>
 
     <h2>
@@ -944,7 +1087,11 @@ function reader(){
 
           <div
             class="verse"
-            onclick="toggleBookmark('${escapeAttribute(v.ref)}')">
+            onclick="
+              toggleBookmark(
+                '${escapeAttribute(v.ref)}'
+              )
+            ">
 
             <div
               style="
@@ -991,8 +1138,15 @@ function reader(){
 
               ${
                 state.lang==='sl'
-                ? (v.slovenian || v.english || '')
-                : (v.english || '')
+                ? (
+                    v.slovenian ||
+                    v.english ||
+                    ''
+                  )
+                : (
+                    v.english ||
+                    ''
+                  )
               }
 
             </div>
@@ -1050,45 +1204,44 @@ function reader(){
       ">
 
       ${t('bookmark')}:
-      ${state.bookmarks.filter(
-        x=>x.bookId===state.loadedBookId
-      ).length}
+      ${
+        state.bookmarks.filter(
+          x=>x.bookId===state.loadedBookId
+        ).length
+      }
 
     </div>
 
   `);
 }
 
-function escapeAttribute(value){
-
-  return String(value)
-    .replace(/\\/g,'\\\\')
-    .replace(/'/g,"\\'");
-}
-
 function search(){
 
-  let q=state.query.toLowerCase();
+  const q=
+    state.query.toLowerCase();
 
-  let rs=RESULTS.filter(r=>
-    (
-      r.join(' ')
-        .toLowerCase()
-        .includes(q)
-      ||
-      !q
-    )
-    &&
-    (
-      state.filter==='All books'
-      ||
-      state.filter===r[3]
-    )
-  );
+  const rs=
+    RESULTS.filter(r=>
+      (
+        r.join(' ')
+          .toLowerCase()
+          .includes(q)
+        ||
+        !q
+      )
+      &&
+      (
+        state.filter==='All books'
+        ||
+        state.filter===r[3]
+      )
+    );
 
   return layout(`
 
-    <h2>${t('search')}</h2>
+    <h2>
+      ${t('search')}
+    </h2>
 
     <input
       class="search"
@@ -1132,7 +1285,8 @@ function search(){
       class="muted"
       style="margin-bottom:8px">
 
-      ${rs.length} ${t('passages')}
+      ${rs.length}
+      ${t('passages')}
 
     </div>
 
@@ -1390,13 +1544,13 @@ function generate(){
 
   render();
 
-  let tmr=setInterval(()=>{
+  const timer=setInterval(()=>{
 
     state.step++;
 
     if(state.step>=4){
 
-      clearInterval(tmr);
+      clearInterval(timer);
 
       state.working=false;
 
@@ -1502,93 +1656,163 @@ function result(){
 
 function saved(){
 
-  const bookmarkCount=state.bookmarks.length;
-
   return layout(`
+
+    <div class="eyebrow">
+      ${t('savedWorks')}
+    </div>
 
     <h2>
       ${t('saved')}
     </h2>
 
-    <div class="row">
+    <div class="section">
 
-      <div class="num">
-        ★
-      </div>
+      <div
+        class="card"
+        style="padding:18px">
 
-      <div class="grow">
+        <h3>
+          ${t('bookmarks')}
+        </h3>
 
-        <div>
-          ${t('bookmark')}
-        </div>
+        <div
+          class="muted"
+          style="margin-top:6px">
 
-        <div class="muted">
-          ${bookmarkCount}
-        </div>
+          ${state.bookmarks.length}
 
-      </div>
-
-    </div>
-
-    <div
-      class="row"
-      onclick="go('result')">
-
-      <div class="num">
-        A
-      </div>
-
-      <div class="grow">
-
-        <div>
-          Taste Before Rule:
-          How Rāgānugā Bhakti Begins
-        </div>
-
-        <div class="muted">
-          ${state.sources.length}
-          ${t('sourcesCount')}
-          · ${t('draft')}
         </div>
 
       </div>
 
     </div>
 
-    <div class="row">
+    ${
+      state.bookmarks.length===0
 
-      <div class="num">
-        K
-      </div>
+      ?
 
-      <div class="grow">
+      `
+        <div
+          class="muted"
+          style="
+            padding:30px 10px;
+            text-align:center
+          ">
 
-        <div>
-          Śrī Rādhā-viraha
+          ${t('noBookmarks')}
+
+        </div>
+      `
+
+      :
+
+      state.bookmarks.map((b,i)=>`
+
+        <div
+          class="row"
+          style="
+            align-items:flex-start;
+            cursor:default
+          ">
+
+          <div class="num">
+            ★
+          </div>
+
+          <div class="grow">
+
+            <div
+              style="
+                font-weight:600;
+                margin-bottom:4px
+              ">
+
+              ${b.bookTitle || ''}
+
+            </div>
+
+            <div class="muted">
+
+              ${b.chapterTitle || ''}
+              ·
+              ${b.ref || ''}
+
+            </div>
+
+            ${
+              b.text
+              ? `
+                <div
+                  style="
+                    font-size:13px;
+                    line-height:1.55;
+                    margin-top:7px
+                  ">
+
+                  ${b.text}
+
+                </div>
+              `
+              : ''
+            }
+
+            <div
+              style="
+                display:flex;
+                gap:8px;
+                margin-top:10px
+              ">
+
+              <button
+                class="chip on"
+                onclick="openBookmark(${i})">
+
+                ${t('openBookmark')}
+
+              </button>
+
+              <button
+                class="chip"
+                onclick="removeBookmark(${i})">
+
+                ${t('removeBookmark')}
+
+              </button>
+
+            </div>
+
+          </div>
+
         </div>
 
-        <div class="muted">
-          Rāga Bhairavī · 6 lines
+      `).join('')
+    }
+
+    <div class="section">
+
+      <div
+        class="row"
+        onclick="go('result')">
+
+        <div class="num">
+          A
         </div>
 
-      </div>
+        <div class="grow">
 
-    </div>
+          <div>
+            Taste Before Rule:
+            How Rāgānugā Bhakti Begins
+          </div>
 
-    <div class="row">
+          <div class="muted">
+            ${state.sources.length}
+            ${t('sourcesCount')}
+            · ${t('draft')}
+          </div>
 
-      <div class="num">
-        B
-      </div>
-
-      <div class="grow">
-
-        <div>
-          The Two Forms of Practice
-        </div>
-
-        <div class="muted">
-          Outline · 9 chapters
         </div>
 
       </div>
@@ -1598,15 +1822,24 @@ function saved(){
   `);
 }
 
+function escapeAttribute(value){
+
+  return String(value)
+    .replace(/\\/g,'\\\\')
+    .replace(/'/g,"\\'");
+}
+
 function render(){
 
-  const root=document.getElementById('app');
+  const root=
+    document.getElementById('app');
 
   if(!root){
     return;
   }
 
   root.innerHTML=
+
     state.screen==='library'
       ? library()
 
@@ -1625,8 +1858,6 @@ function render(){
     : saved();
 }
 
-const root=document.getElementById('app');
-
 window.go=go;
 window.generate=generate;
 window.setLanguage=setLanguage;
@@ -1634,6 +1865,8 @@ window.openBook=openBook;
 window.previousChapter=previousChapter;
 window.nextChapter=nextChapter;
 window.toggleBookmark=toggleBookmark;
+window.openBookmark=openBookmark;
+window.removeBookmark=removeBookmark;
 window.loadSampleBook=loadSampleBook;
 window.state=state;
 
