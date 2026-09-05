@@ -378,6 +378,24 @@ function setLanguage(lang) {
 
 
 function go(screen) {
+
+  /*
+    IMPORTANT:
+    If the user leaves Search, cancel any pending
+    request that would put the focus back into
+    the Search field.
+  */
+
+  if (typeof searchFocusFrame !== 'undefined' &&
+      searchFocusFrame !== null) {
+
+    cancelAnimationFrame(
+      searchFocusFrame
+    );
+
+    searchFocusFrame = null;
+  }
+
   state.screen = screen;
 
   save();
@@ -1544,6 +1562,13 @@ const SEARCH_STORE_NAME = 'pages';
 let pdfjsPromise = null;
 
 
+/*
+  Used only to keep the Search input focused while
+  typing. Navigation cancels this frame.
+*/
+let searchFocusFrame = null;
+
+
 function normalizeSearchText(value) {
   return String(value || '')
     .normalize('NFD')
@@ -2435,24 +2460,72 @@ async function buildSearchIndex() {
 }
 
 
+/* =========================================================
+   SEARCH QUERY
+   ========================================================= */
+
 function setSearchQuery(value) {
+
   state.query = value;
+
   render();
 
-  requestAnimationFrame(() => {
-    const input = document.querySelector('.search');
+  /*
+    Cancel any older focus request first.
+  */
 
-    if (input) {
-      input.focus();
+  if (
+    searchFocusFrame !== null
+  ) {
 
-      const end = input.value.length;
+    cancelAnimationFrame(
+      searchFocusFrame
+    );
 
-      input.setSelectionRange(
-        end,
-        end
-      );
-    }
-  });
+    searchFocusFrame = null;
+  }
+
+
+  /*
+    Restore focus only after the Search
+    screen has finished rendering.
+  */
+
+  searchFocusFrame =
+    requestAnimationFrame(() => {
+
+      searchFocusFrame = null;
+
+      /*
+        IMPORTANT:
+        Only restore focus if we are still
+        actually on the Search screen.
+      */
+
+      if (
+        state.screen !== 'search'
+      ) {
+        return;
+      }
+
+      const input =
+        document.querySelector(
+          '.search'
+        );
+
+      if (input) {
+
+        input.focus();
+
+        const end =
+          input.value.length;
+
+        input.setSelectionRange(
+          end,
+          end
+        );
+      }
+    });
 }
 
 
