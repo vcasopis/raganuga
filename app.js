@@ -220,6 +220,14 @@ const I18N = {
     poemPromptPlaceholder: 'Describe exactly what you want: theme, number of verses, language, style, mood, Sanskrit terms, Bengali, English, Slovenian, etc.',
     createPoem: 'Create poem',
 
+    works: 'Works',
+    noSavedWorks: 'No generated works yet.',
+    lectureWork: 'Lecture',
+    poemWork: 'Poem',
+    created: 'Created',
+    deleteWork: 'Delete',
+    openWork: 'Open',
+
     aiNotConnected: 'AI generation will be connected next.'
   },
 
@@ -320,6 +328,14 @@ const I18N = {
     poemPromptPlaceholder: 'Opiši vse, kar želiš: temo, število verzov, jezik, slog, razpoloženje, sanskrtske izraze, bengalščino, angleščino, slovenščino itd.',
     createPoem: 'Ustvari pesem',
 
+    works: 'Dela',
+    noSavedWorks: 'Zaenkrat še ni ustvarjenih del.',
+    lectureWork: 'Predavanje',
+    poemWork: 'Pesem',
+    created: 'Ustvarjeno',
+    deleteWork: 'Izbriši',
+    openWork: 'Odpri',
+
     aiNotConnected: 'AI generiranje bomo povezali v naslednjem koraku.'
   }
 };
@@ -359,7 +375,9 @@ let state = {
   poemError: '',
   poemPassages: [],
 
-  creationType: 'lecture'
+  creationType: 'lecture',
+
+  works: []
 };
 
 
@@ -381,6 +399,10 @@ if (!Array.isArray(state.bookmarks)) {
 
 if (!Array.isArray(state.sources)) {
   state.sources = [0, 1, 2, 3];
+}
+
+if (!Array.isArray(state.works)) {
+  state.works = [];
 }
 
 state.lectureLength =
@@ -436,6 +458,10 @@ if (
 }
 
 
+/* =========================================================
+   GENERAL
+   ========================================================= */
+
 function t(key) {
   return I18N[state.lang]?.[key] || I18N.en[key] || key;
 }
@@ -443,6 +469,7 @@ function t(key) {
 
 function save() {
   try {
+
     const savedState = {
       screen: state.screen,
       book: state.book,
@@ -472,18 +499,24 @@ function save() {
       poemError: state.poemError,
       poemPassages: state.poemPassages,
 
-      creationType: state.creationType
+      creationType: state.creationType,
+
+      works: state.works
     };
+
 
     localStorage.setItem(
       'rb-state',
       JSON.stringify(savedState)
     );
+
   } catch (error) {
+
     console.warn(
       'Could not save app state:',
       error
     );
+
   }
 }
 
@@ -506,6 +539,7 @@ function escapeAttribute(value) {
 
 
 function setLanguage(lang) {
+
   state.lang = lang;
 
   state.intent =
@@ -524,9 +558,12 @@ function go(screen) {
     typeof searchFocusFrame !== 'undefined' &&
     searchFocusFrame !== null
   ) {
+
     cancelAnimationFrame(searchFocusFrame);
     searchFocusFrame = null;
+
   }
+
 
   state.screen = screen;
 
@@ -541,17 +578,21 @@ function go(screen) {
 
 
 function toast(message) {
+
   state.toast = message;
   render();
 
   setTimeout(() => {
+
     state.toast = '';
     render();
+
   }, 1800);
 }
 
 
 function languageSelector() {
+
   return `
     <div class="language-selector">
 
@@ -559,14 +600,18 @@ function languageSelector() {
         type="button"
         class="chip ${state.lang === 'en' ? 'on' : ''}"
         onclick="setLanguage('en')">
+
         🇬🇧 EN
+
       </button>
 
       <button
         type="button"
         class="chip ${state.lang === 'sl' ? 'on' : ''}"
         onclick="setLanguage('sl')">
+
         🇸🇮 SL
+
       </button>
 
     </div>
@@ -575,6 +620,7 @@ function languageSelector() {
 
 
 function nav() {
+
   return `
     <nav class="nav">
 
@@ -583,17 +629,24 @@ function nav() {
         ['search', '⌕', t('search')],
         ['create', '✦', t('create')],
         ['saved', '♡', t('saved')]
-      ].map(([key, icon, label]) => `
-        <button
-          type="button"
-          class="${state.screen === key ? 'active' : ''}"
-          onclick="go('${key}')">
+      ].map(
+        ([key, icon, label]) => `
 
-          ${icon}
-          <small>${label}</small>
+          <button
+            type="button"
+            class="${state.screen === key ? 'active' : ''}"
+            onclick="go('${key}')">
 
-        </button>
-      `).join('')}
+            ${icon}
+
+            <small>
+              ${label}
+            </small>
+
+          </button>
+
+        `
+      ).join('')}
 
     </nav>
   `;
@@ -601,6 +654,7 @@ function nav() {
 
 
 function layout(body) {
+
   return `
     <div class="shell">
 
@@ -634,6 +688,7 @@ function layout(body) {
    ========================================================= */
 
 function library() {
+
   return layout(`
 
     <div class="eyebrow">
@@ -668,31 +723,33 @@ function library() {
 
       <div class="grid">
 
-        ${BOOKS.map((book, index) => `
+        ${BOOKS.map(
+          (book, index) => `
 
-          <div
-            class="book"
-            onclick="openBook(${index})">
+            <div
+              class="book"
+              onclick="openBook(${index})">
 
-            <div class="cover">
+              <div class="cover">
 
-              <strong>
-                ${escapeHtml(book.short)}
-              </strong>
+                <strong>
+                  ${escapeHtml(book.short)}
+                </strong>
 
-              <span class="muted">
-                ${escapeHtml(book.script)}
-              </span>
+                <span class="muted">
+                  ${escapeHtml(book.script)}
+                </span>
+
+              </div>
+
+              <div class="bookname">
+                ${escapeHtml(book.author)}
+              </div>
 
             </div>
 
-            <div class="bookname">
-              ${escapeHtml(book.author)}
-            </div>
-
-          </div>
-
-        `).join('')}
+          `
+        ).join('')}
 
       </div>
 
@@ -704,6 +761,7 @@ function library() {
       <h3 style="margin-bottom:12px">
         ${t('collections')}
       </h3>
+
 
       ${[
         [
@@ -724,57 +782,61 @@ function library() {
           '2 generated works',
           'saved'
         ]
-      ].map(item => `
+      ].map(
+        item => `
 
-        <div
-          class="row"
-          onclick="go('${item[3]}')">
+          <div
+            class="row"
+            onclick="go('${item[3]}')">
 
-          <div class="num">
-            ${item[0]}
-          </div>
-
-          <div class="grow">
-
-            <div>
-              ${
-                state.lang === 'sl'
-                  ? ({
-                      'Sources for the Sunday class':
-                        'Viri za nedeljski razred',
-                      'On ruci and lobha':
-                        'O ruci in lobhi',
-                      'Kirtan drafts':
-                        'Osnutki kirtana'
-                    }[item[1]] || item[1])
-                  : item[1]
-              }
+            <div class="num">
+              ${item[0]}
             </div>
 
-            <div class="muted">
+            <div class="grow">
 
-              ${
-                state.lang === 'sl'
-                  ? ({
-                      '4 books · 11 verses marked':
-                        '4 knjige · 11 označenih verzov',
-                      '7 verses across 3 books':
-                        '7 verzov v 3 knjigah',
-                      '2 generated works':
-                        '2 ustvarjeni deli'
-                    }[item[2]] || item[2])
-                  : item[2]
-              }
+              <div>
+                ${
+                  state.lang === 'sl'
+                    ? ({
+                        'Sources for the Sunday class':
+                          'Viri za nedeljski razred',
+                        'On ruci and lobha':
+                          'O ruci in lobhi',
+                        'Kirtan drafts':
+                          'Osnutki kirtana'
+                      }[item[1]] || item[1])
+                    : item[1]
+                }
+              </div>
+
+              <div class="muted">
+
+                ${
+                  state.lang === 'sl'
+                    ? ({
+                        '4 books · 11 verses marked':
+                          '4 knjige · 11 označenih verzov',
+                        '7 verses across 3 books':
+                          '7 verzov v 3 knjigah',
+                        '2 generated works':
+                          '2 ustvarjeni deli'
+                      }[item[2]] || item[2])
+                    : item[2]
+                }
+
+              </div>
 
             </div>
 
+            <span>
+              ›
+            </span>
+
           </div>
 
-          <span>›</span>
-
-        </div>
-
-      `).join('')}
+        `
+      ).join('')}
 
     </div>
 
@@ -787,6 +849,7 @@ function library() {
    ========================================================= */
 
 function openBook(index) {
+
   state.book = index;
   state.chapter = 0;
 
@@ -796,19 +859,29 @@ function openBook(index) {
     return;
   }
 
+
   if (book.sample) {
     loadSampleBook();
     return;
   }
 
-  if (Array.isArray(book.pdfs) && book.pdfs.length) {
+
+  if (
+    Array.isArray(book.pdfs) &&
+    book.pdfs.length
+  ) {
+
     state.screen = 'reader';
+
     save();
     render();
+
     return;
   }
 
+
   if (book.pdf) {
+
     save();
 
     window.open(
@@ -820,19 +893,23 @@ function openBook(index) {
     return;
   }
 
+
   go('reader');
 }
 
 
 function openPdf(file, page) {
+
   if (!file) {
     return;
   }
+
 
   const target =
     page
       ? file + '#page=' + encodeURIComponent(page)
       : file;
+
 
   window.open(
     target,
@@ -843,6 +920,7 @@ function openPdf(file, page) {
 
 
 async function loadSampleBook() {
+
   state.loadedBook = null;
   state.loadedBookId = 'sample-book';
   state.screen = 'reader';
@@ -850,36 +928,54 @@ async function loadSampleBook() {
   save();
   render();
 
+
   try {
-    const response = await fetch(
-      'data/sample-book.json',
-      {
-        cache: 'no-store'
-      }
-    );
+
+    const response =
+      await fetch(
+        'data/sample-book.json',
+        {
+          cache: 'no-store'
+        }
+      );
+
 
     if (!response.ok) {
+
       throw new Error(
-        'HTTP ' + response.status
+        'HTTP ' +
+        response.status
       );
+
     }
 
-    const data = await response.json();
 
-    state.loadedBook = data;
+    const data =
+      await response.json();
+
+
+    state.loadedBook =
+      data;
+
     state.loadedBookId =
-      data.id || 'sample-book';
+      data.id ||
+      'sample-book';
+
 
     if (
       state.chapter < 0 ||
       state.chapter >=
         (data.chapters || []).length
     ) {
+
       state.chapter = 0;
+
     }
+
 
     save();
     render();
+
 
   } catch (error) {
 
@@ -888,15 +984,26 @@ async function loadSampleBook() {
       error
     );
 
-    state.loadedBook = FALLBACK_BOOK;
-    state.loadedBookId = 'sample-book';
+
+    state.loadedBook =
+      FALLBACK_BOOK;
+
+    state.loadedBookId =
+      'sample-book';
+
 
     save();
     render();
 
+
     setTimeout(() => {
-      toast(t('loadingFailed'));
+
+      toast(
+        t('loadingFailed')
+      );
+
     }, 100);
+
   }
 }
 
@@ -912,14 +1019,32 @@ function getCurrentBook() {
     return FALLBACK_BOOK;
   }
 
-  const meta = BOOKS[state.book];
+
+  const meta =
+    BOOKS[state.book];
+
 
   return {
-    id: meta?.id || '',
-    title: meta?.short || '',
-    author: meta?.author || '',
-    language: meta?.script || '',
-    chapters: []
+
+    id:
+      meta?.id ||
+      '',
+
+    title:
+      meta?.short ||
+      '',
+
+    author:
+      meta?.author ||
+      '',
+
+    language:
+      meta?.script ||
+      '',
+
+    chapters:
+      []
+
   };
 }
 
@@ -930,37 +1055,51 @@ function getCurrentBook() {
 
 function getProgress(bookIndex) {
 
-  const book = BOOKS[bookIndex];
+  const book =
+    BOOKS[bookIndex];
 
   if (!book) {
     return 0;
   }
 
-  const value = Number(
-    localStorage.getItem(
-      'rb-progress-' + book.id
-    ) || 0
-  );
+
+  const value =
+    Number(
+      localStorage.getItem(
+        'rb-progress-' +
+        book.id
+      ) || 0
+    );
+
 
   return Math.max(
     0,
-    Math.min(100, value)
+    Math.min(
+      100,
+      value
+    )
   );
 }
 
 
-function setProgress(bookId, value) {
+function setProgress(
+  bookId,
+  value
+) {
 
-  const safeValue = Math.max(
-    0,
-    Math.min(
-      100,
-      Math.round(value)
-    )
-  );
+  const safeValue =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round(value)
+      )
+    );
+
 
   localStorage.setItem(
-    'rb-progress-' + bookId,
+    'rb-progress-' +
+    bookId,
     String(safeValue)
   );
 }
@@ -968,20 +1107,28 @@ function setProgress(bookId, value) {
 
 function updateReadingProgress() {
 
-  const book = getCurrentBook();
+  const book =
+    getCurrentBook();
+
 
   if (
     !book ||
     !Array.isArray(book.chapters) ||
     book.chapters.length === 0
   ) {
+
     return;
+
   }
 
+
   const progress =
-    ((state.chapter + 1) /
-      book.chapters.length) *
+    (
+      (state.chapter + 1) /
+      book.chapters.length
+    ) *
     100;
+
 
   setProgress(
     book.id || 'sample-book',
@@ -992,14 +1139,19 @@ function updateReadingProgress() {
 
 function currentChapter() {
 
-  const book = getCurrentBook();
+  const book =
+    getCurrentBook();
+
 
   if (
     !book ||
     !Array.isArray(book.chapters)
   ) {
+
     return null;
+
   }
+
 
   return (
     book.chapters[state.chapter] ||
@@ -1039,6 +1191,7 @@ function toggleBookmark(ref) {
           String(ref)
     );
 
+
   if (existing >= 0) {
 
     state.bookmarks.splice(
@@ -1046,25 +1199,39 @@ function toggleBookmark(ref) {
       1
     );
 
+
     save();
     render();
 
+
     setTimeout(() => {
-      toast(t('removed'));
+
+      toast(
+        t('removed')
+      );
+
     }, 50);
+
 
     return;
   }
 
-  const book = getCurrentBook();
-  const chapter = currentChapter();
+
+  const book =
+    getCurrentBook();
+
+  const chapter =
+    currentChapter();
+
 
   const verse =
-    (chapter?.verses || []).find(
-      item =>
-        String(item.ref) ===
-        String(ref)
-    );
+    (chapter?.verses || [])
+      .find(
+        item =>
+          String(item.ref) ===
+          String(ref)
+      );
+
 
   state.bookmarks.push({
 
@@ -1082,42 +1249,58 @@ function toggleBookmark(ref) {
       'Sample Edition',
 
     chapter:
-      Number(state.chapter),
+      Number(
+        state.chapter
+      ),
 
     chapterTitle:
-      chapter?.title || '',
+      chapter?.title ||
+      '',
 
     ref:
       String(ref),
 
     english:
-      verse?.english || '',
+      verse?.english ||
+      '',
 
     slovenian:
-      verse?.slovenian || '',
+      verse?.slovenian ||
+      '',
 
     sanskrit:
-      verse?.sanskrit || '',
+      verse?.sanskrit ||
+      '',
 
     transliteration:
-      verse?.transliteration || '',
+      verse?.transliteration ||
+      '',
 
     created:
       new Date().toISOString()
+
   });
+
 
   save();
   render();
 
+
   setTimeout(() => {
-    toast(t('bookmarked'));
+
+    toast(
+      t('bookmarked')
+    );
+
   }, 50);
 }
 
 
 function previousChapter() {
 
-  if (state.chapter > 0) {
+  if (
+    state.chapter > 0
+  ) {
 
     state.chapter--;
 
@@ -1136,7 +1319,9 @@ function previousChapter() {
 
 function nextChapter() {
 
-  const book = getCurrentBook();
+  const book =
+    getCurrentBook();
+
 
   if (
     book.chapters &&
@@ -1160,7 +1345,9 @@ function nextChapter() {
 
     updateReadingProgress();
 
-    toast(t('endSection'));
+    toast(
+      t('endSection')
+    );
   }
 }
 
@@ -1171,17 +1358,24 @@ function nextChapter() {
 
 function reader() {
 
-  const meta = BOOKS[state.book];
+  const meta =
+    BOOKS[state.book];
+
 
   if (!meta) {
 
     return layout(`
-      <h2>${t('reader')}</h2>
+
+      <h2>
+        ${t('reader')}
+      </h2>
 
       <div class="muted">
         ${t('loading')}
       </div>
+
     `);
+
   }
 
 
@@ -1198,7 +1392,9 @@ function reader() {
           type="button"
           class="back"
           onclick="go('library')">
+
           ‹
+
         </button>
 
         <div style="flex:1">
@@ -1227,14 +1423,20 @@ function reader() {
         </h2>
 
         <p class="muted">
+
           ${escapeHtml(meta.author)}
+
           ·
+
           ${escapeHtml(meta.script)}
+
         </p>
+
 
         <h3 style="margin-top:24px">
           ${t('choosePart')}
         </h3>
+
 
         <div
           style="
@@ -1243,36 +1445,38 @@ function reader() {
             margin-top:14px
           ">
 
-          ${meta.pdfs.map(part => `
+          ${meta.pdfs.map(
+            part => `
 
-            <button
-              type="button"
-              class="select"
-              style="
-                text-align:left;
-                padding:16px
-              "
-              onclick="
-                openPdf(
-                  '${escapeAttribute(part.file)}'
-                )
-              ">
+              <button
+                type="button"
+                class="select"
+                style="
+                  text-align:left;
+                  padding:16px
+                "
+                onclick="
+                  openPdf(
+                    '${escapeAttribute(part.file)}'
+                  )
+                ">
 
-              <strong>
-                ${escapeHtml(part.title)}
-              </strong>
+                <strong>
+                  ${escapeHtml(part.title)}
+                </strong>
 
-              <div
-                class="muted"
-                style="margin-top:4px">
+                <div
+                  class="muted"
+                  style="margin-top:4px">
 
-                PDF
+                  PDF
 
-              </div>
+                </div>
 
-            </button>
+              </button>
 
-          `).join('')}
+            `
+          ).join('')}
 
         </div>
 
@@ -1292,7 +1496,9 @@ function reader() {
           type="button"
           class="back"
           onclick="go('library')">
+
           ‹
+
         </button>
 
         <div style="flex:1">
@@ -1323,6 +1529,7 @@ function reader() {
         <p class="muted">
           ${escapeHtml(meta.author)}
         </p>
+
 
         <button
           type="button"
@@ -1356,7 +1563,9 @@ function reader() {
           type="button"
           class="back"
           onclick="go('library')">
+
           ‹
+
         </button>
 
         <div style="flex:1">
@@ -1392,8 +1601,12 @@ function reader() {
   }
 
 
-  const book = getCurrentBook();
-  const chapter = currentChapter();
+  const book =
+    getCurrentBook();
+
+  const chapter =
+    currentChapter();
+
 
   if (!chapter) {
 
@@ -1405,7 +1618,9 @@ function reader() {
           type="button"
           class="back"
           onclick="go('library')">
+
           ‹
+
         </button>
 
         <div style="flex:1">
@@ -1422,6 +1637,7 @@ function reader() {
 
       </div>
 
+
       <div class="muted">
         ${t('loading')}
       </div>
@@ -1433,9 +1649,11 @@ function reader() {
   const progress =
     book.chapters.length
       ? Math.round(
-          ((state.chapter + 1) /
-            book.chapters.length) *
-            100
+          (
+            (state.chapter + 1) /
+            book.chapters.length
+          ) *
+          100
         )
       : 0;
 
@@ -1448,8 +1666,11 @@ function reader() {
         type="button"
         class="back"
         onclick="go('library')">
+
         ‹
+
       </button>
+
 
       <div style="flex:1">
 
@@ -1462,6 +1683,7 @@ function reader() {
         </div>
 
       </div>
+
 
       <button
         type="button"
@@ -1488,14 +1710,18 @@ function reader() {
       ">
 
       <span>
+
         ${t('chapter')}
         ${state.chapter + 1}
         /
         ${book.chapters.length}
+
       </span>
 
       <span>
+
         ${progress}%
+
       </span>
 
     </div>
@@ -1505,7 +1731,9 @@ function reader() {
       class="progress"
       style="margin-bottom:28px">
 
-      <i style="width:${progress}%"></i>
+      <i
+        style="width:${progress}%">
+      </i>
 
     </div>
 
@@ -1519,96 +1747,108 @@ function reader() {
 
       ${
         (chapter.verses || [])
-          .map(verse => `
-
-            <div
-              class="verse"
-              onclick="
-                toggleBookmark(
-                  '${escapeAttribute(verse.ref)}'
-                )
-              ">
+          .map(
+            verse => `
 
               <div
-                style="
-                  display:flex;
-                  justify-content:space-between;
-                  align-items:center
+                class="verse"
+                onclick="
+                  toggleBookmark(
+                    '${escapeAttribute(verse.ref)}'
+                  )
                 ">
 
-                <div class="ref">
-                  ${escapeHtml(verse.ref)}
+                <div
+                  style="
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:center
+                  ">
+
+                  <div class="ref">
+                    ${escapeHtml(verse.ref)}
+                  </div>
+
+                  <div
+                    class="muted"
+                    style="font-size:11px">
+
+                    ${
+                      isBookmarked(
+                        verse.ref
+                      )
+                        ? '★'
+                        : '☆'
+                    }
+
+                  </div>
+
                 </div>
 
-                <div
-                  class="muted"
-                  style="font-size:11px">
+
+                ${
+                  state.script
+                    ? `
+
+                      <div class="deva">
+
+                        ${escapeHtml(
+                          verse.sanskrit ||
+                          ''
+                        )}
+
+                      </div>
+
+                      <div class="translit">
+
+                        ${escapeHtml(
+                          verse.transliteration ||
+                          ''
+                        )}
+
+                      </div>
+
+                    `
+                    : ''
+                }
+
+
+                <div class="english">
 
                   ${
-                    isBookmarked(verse.ref)
-                      ? '★'
-                      : '☆'
+                    state.lang === 'sl'
+                      ? escapeHtml(
+                          verse.slovenian ||
+                          verse.english ||
+                          ''
+                        )
+                      : escapeHtml(
+                          verse.english ||
+                          ''
+                        )
                   }
 
                 </div>
 
-              </div>
-
-
-              ${
-                state.script
-                  ? `
-
-                    <div class="deva">
-                      ${escapeHtml(
-                        verse.sanskrit || ''
-                      )}
-                    </div>
-
-                    <div class="translit">
-                      ${escapeHtml(
-                        verse.transliteration || ''
-                      )}
-                    </div>
-
-                  `
-                  : ''
-              }
-
-
-              <div class="english">
 
                 ${
-                  state.lang === 'sl'
-                    ? escapeHtml(
-                        verse.slovenian ||
-                        verse.english ||
-                        ''
-                      )
-                    : escapeHtml(
-                        verse.english ||
-                        ''
-                      )
+                  verse.note
+                    ? `
+                      <div class="note">
+
+                        ${escapeHtml(
+                          verse.note
+                        )}
+
+                      </div>
+                    `
+                    : ''
                 }
 
               </div>
 
-
-              ${
-                verse.note
-                  ? `
-                    <div class="note">
-                      ${escapeHtml(
-                        verse.note
-                      )}
-                    </div>
-                  `
-                  : ''
-              }
-
-            </div>
-
-          `)
+            `
+          )
           .join('')
       }
 
@@ -1626,17 +1866,24 @@ function reader() {
       <button
         type="button"
         class="chip"
-        style="flex:1;padding:12px"
+        style="
+          flex:1;
+          padding:12px
+        "
         onclick="previousChapter()">
 
         ‹ ${t('previous')}
 
       </button>
 
+
       <button
         type="button"
         class="chip on"
-        style="flex:1;padding:12px"
+        style="
+          flex:1;
+          padding:12px
+        "
         onclick="nextChapter()">
 
         ${t('next')} ›
@@ -1654,6 +1901,7 @@ function reader() {
       ">
 
       ${t('bookmark')}:
+
       ${
         state.bookmarks.filter(
           item =>
@@ -1672,11 +1920,17 @@ function reader() {
    PDF SEARCH ENGINE
    ========================================================= */
 
-const PDFJS_VERSION = '6.2.108';
+const PDFJS_VERSION =
+  '6.2.108';
 
-const SEARCH_DB_NAME = 'raganuga-search-db';
-const SEARCH_DB_VERSION = 1;
-const SEARCH_STORE_NAME = 'pages';
+const SEARCH_DB_NAME =
+  'raganuga-search-db';
+
+const SEARCH_DB_VERSION =
+  1;
+
+const SEARCH_STORE_NAME =
+  'pages';
 
 let pdfjsPromise = null;
 
@@ -1684,10 +1938,15 @@ let searchFocusFrame = null;
 
 
 function normalizeSearchText(value) {
+
   return String(value || '')
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(
+      /[\u0300-\u036f]/g,
+      ''
+    )
     .toLowerCase();
+
 }
 
 
@@ -1707,29 +1966,39 @@ function makeSearchSnippet(result) {
           ''
         );
 
+
   const text =
     String(source)
       .replace(/\s+/g, ' ')
       .trim();
 
-  if (text.length <= 320) {
+
+  if (
+    text.length <= 320
+  ) {
+
     return text;
+
   }
+
 
   const query =
     normalizeSearchText(
       state.query
     );
 
+
   const normalized =
     normalizeSearchText(
       text
     );
 
+
   const pos =
     query
       ? normalized.indexOf(query)
       : -1;
+
 
   if (pos >= 0) {
 
@@ -1739,20 +2008,30 @@ function makeSearchSnippet(result) {
         pos - 120
       );
 
+
     const end =
       Math.min(
         text.length,
         start + 320
       );
 
+
     return (
       (start > 0 ? '…' : '') +
-      text.slice(start, end) +
+      text.slice(
+        start,
+        end
+      ) +
       (end < text.length ? '…' : '')
     );
+
   }
 
-  return text.slice(0, 320) + '…';
+
+  return (
+    text.slice(0, 320) +
+    '…'
+  );
 }
 
 
@@ -1760,39 +2039,72 @@ function getPdfEntries() {
 
   const entries = [];
 
-  BOOKS.forEach(book => {
 
-    if (book.pdf) {
+  BOOKS.forEach(
+    book => {
 
-      entries.push({
-        bookId: book.id,
-        bookTitle: book.short,
-        author: book.author,
-        chapterTitle: 'PDF',
-        pdf: book.pdf
-      });
-
-      return;
-    }
-
-    if (
-      Array.isArray(book.pdfs)
-    ) {
-
-      book.pdfs.forEach(part => {
+      if (book.pdf) {
 
         entries.push({
-          bookId: book.id,
-          bookTitle: book.short,
-          author: book.author,
-          chapterTitle: part.title,
-          pdf: part.file,
-          partId: part.id
+
+          bookId:
+            book.id,
+
+          bookTitle:
+            book.short,
+
+          author:
+            book.author,
+
+          chapterTitle:
+            'PDF',
+
+          pdf:
+            book.pdf
+
         });
 
-      });
+
+        return;
+      }
+
+
+      if (
+        Array.isArray(book.pdfs)
+      ) {
+
+        book.pdfs.forEach(
+          part => {
+
+            entries.push({
+
+              bookId:
+                book.id,
+
+              bookTitle:
+                book.short,
+
+              author:
+                book.author,
+
+              chapterTitle:
+                part.title,
+
+              pdf:
+                part.file,
+
+              partId:
+                part.id
+
+            });
+
+          }
+        );
+      }
+
     }
-  });
+  );
+
 
   return entries;
 }
@@ -1808,18 +2120,22 @@ async function getPdfJs() {
         PDFJS_VERSION +
         '/build/pdf.min.mjs'
       )
-      .then(pdfjsLib => {
+      .then(
+        pdfjsLib => {
 
-        pdfjsLib
-          .GlobalWorkerOptions
-          .workerSrc =
-            'https://cdn.jsdelivr.net/npm/pdfjs-dist@' +
-            PDFJS_VERSION +
-            '/build/pdf.worker.min.mjs';
+          pdfjsLib
+            .GlobalWorkerOptions
+            .workerSrc =
+              'https://cdn.jsdelivr.net/npm/pdfjs-dist@' +
+              PDFJS_VERSION +
+              '/build/pdf.worker.min.mjs';
 
-        return pdfjsLib;
-      });
+          return pdfjsLib;
+
+        }
+      );
   }
+
 
   return pdfjsPromise;
 }
@@ -1830,7 +2146,9 @@ function openSearchDatabase() {
   return new Promise(
     (resolve, reject) => {
 
-      if (!('indexedDB' in window)) {
+      if (
+        !('indexedDB' in window)
+      ) {
 
         reject(
           new Error(
@@ -1839,7 +2157,9 @@ function openSearchDatabase() {
         );
 
         return;
+
       }
+
 
       const request =
         indexedDB.open(
@@ -1847,11 +2167,13 @@ function openSearchDatabase() {
           SEARCH_DB_VERSION
         );
 
+
       request.onupgradeneeded =
         function () {
 
           const db =
             request.result;
+
 
           if (
             !db.objectStoreNames.contains(
@@ -1867,6 +2189,7 @@ function openSearchDatabase() {
                 }
               );
 
+
             store.createIndex(
               'bookId',
               'bookId',
@@ -1875,6 +2198,7 @@ function openSearchDatabase() {
               }
             );
 
+
             store.createIndex(
               'pdf',
               'pdf',
@@ -1882,8 +2206,11 @@ function openSearchDatabase() {
                 unique: false
               }
             );
+
           }
+
         };
+
 
       request.onsuccess =
         function () {
@@ -1891,7 +2218,9 @@ function openSearchDatabase() {
           resolve(
             request.result
           );
+
         };
+
 
       request.onerror =
         function () {
@@ -1902,7 +2231,9 @@ function openSearchDatabase() {
               'IndexedDB error.'
             )
           );
+
         };
+
     }
   );
 }
@@ -1911,140 +2242,183 @@ function openSearchDatabase() {
 function clearSearchDatabase() {
 
   return openSearchDatabase()
-    .then(db => {
+    .then(
+      db => {
 
-      return new Promise(
-        (resolve, reject) => {
+        return new Promise(
+          (resolve, reject) => {
 
-          const transaction =
-            db.transaction(
-              SEARCH_STORE_NAME,
-              'readwrite'
-            );
-
-          const store =
-            transaction.objectStore(
-              SEARCH_STORE_NAME
-            );
-
-          const request =
-            store.clear();
-
-          request.onsuccess =
-            () => resolve();
-
-          request.onerror =
-            () =>
-              reject(
-                request.error
+            const transaction =
+              db.transaction(
+                SEARCH_STORE_NAME,
+                'readwrite'
               );
 
-          transaction.oncomplete =
-            () => db.close();
 
-          transaction.onerror =
-            () =>
-              reject(
-                transaction.error
+            const store =
+              transaction.objectStore(
+                SEARCH_STORE_NAME
               );
-        }
-      );
-    });
+
+
+            const request =
+              store.clear();
+
+
+            request.onsuccess =
+              () =>
+                resolve();
+
+
+            request.onerror =
+              () =>
+                reject(
+                  request.error
+                );
+
+
+            transaction.oncomplete =
+              () =>
+                db.close();
+
+
+            transaction.onerror =
+              () =>
+                reject(
+                  transaction.error
+                );
+
+          }
+        );
+
+      }
+    );
 }
 
 
 function loadCachedSearchIndex() {
 
   return openSearchDatabase()
-    .then(db => {
+    .then(
+      db => {
 
-      return new Promise(
-        (resolve, reject) => {
+        return new Promise(
+          (resolve, reject) => {
 
-          const transaction =
-            db.transaction(
-              SEARCH_STORE_NAME,
-              'readonly'
-            );
-
-          const store =
-            transaction.objectStore(
-              SEARCH_STORE_NAME
-            );
-
-          const request =
-            store.getAll();
-
-          request.onsuccess =
-            function () {
-
-              const rows =
-                request.result || [];
-
-              db.close();
-
-              resolve(rows);
-            };
-
-          request.onerror =
-            function () {
-
-              db.close();
-
-              reject(
-                request.error
+            const transaction =
+              db.transaction(
+                SEARCH_STORE_NAME,
+                'readonly'
               );
-            };
-        }
-      );
-    });
+
+
+            const store =
+              transaction.objectStore(
+                SEARCH_STORE_NAME
+              );
+
+
+            const request =
+              store.getAll();
+
+
+            request.onsuccess =
+              function () {
+
+                const rows =
+                  request.result ||
+                  [];
+
+
+                db.close();
+
+
+                resolve(
+                  rows
+                );
+
+              };
+
+
+            request.onerror =
+              function () {
+
+                db.close();
+
+
+                reject(
+                  request.error
+                );
+
+              };
+
+          }
+        );
+
+      }
+    );
 }
 
 
 function saveSearchRows(rows) {
 
   return openSearchDatabase()
-    .then(db => {
+    .then(
+      db => {
 
-      return new Promise(
-        (resolve, reject) => {
+        return new Promise(
+          (resolve, reject) => {
 
-          const transaction =
-            db.transaction(
-              SEARCH_STORE_NAME,
-              'readwrite'
-            );
-
-          const store =
-            transaction.objectStore(
-              SEARCH_STORE_NAME
-            );
-
-          rows.forEach(row => {
-
-            store.put(row);
-
-          });
-
-          transaction.oncomplete =
-            function () {
-
-              db.close();
-              resolve();
-            };
-
-          transaction.onerror =
-            function () {
-
-              db.close();
-
-              reject(
-                transaction.error
+            const transaction =
+              db.transaction(
+                SEARCH_STORE_NAME,
+                'readwrite'
               );
-            };
-        }
-      );
-    });
+
+
+            const store =
+              transaction.objectStore(
+                SEARCH_STORE_NAME
+              );
+
+
+            rows.forEach(
+              row => {
+
+                store.put(
+                  row
+                );
+
+              }
+            );
+
+
+            transaction.oncomplete =
+              function () {
+
+                db.close();
+                resolve();
+
+              };
+
+
+            transaction.onerror =
+              function () {
+
+                db.close();
+
+
+                reject(
+                  transaction.error
+                );
+
+              };
+
+          }
+        );
+
+      }
+    );
 }
 
 
@@ -2063,6 +2437,7 @@ function makeSearchRow(
       .replace(/\s+/g, ' ')
       .trim();
 
+
   return {
 
     id:
@@ -2073,9 +2448,14 @@ function makeSearchRow(
       page,
 
     bookId,
+
     bookTitle,
+
     author,
-    chapterIndex: 0,
+
+    chapterIndex:
+      0,
+
     chapterTitle:
       chapterTitle +
       ' · page ' +
@@ -2086,6 +2466,7 @@ function makeSearchRow(
       page,
 
     page,
+
     pdf,
 
     sanskrit:
@@ -2109,6 +2490,7 @@ function makeSearchRow(
           cleanText
         ].join(' ')
       )
+
   };
 }
 
@@ -2118,12 +2500,16 @@ async function buildPdfSearchIndex() {
   const pdfjsLib =
     await getPdfJs();
 
+
   const entries =
     getPdfEntries();
 
+
   const rows = [];
 
+
   let totalPages = 0;
+
 
   for (
     let bookNumber = 0;
@@ -2134,17 +2520,26 @@ async function buildPdfSearchIndex() {
     const entry =
       entries[bookNumber];
 
+
     const loadingTask =
       pdfjsLib.getDocument({
-        url: entry.pdf,
-        enableScripting: false
+
+        url:
+          entry.pdf,
+
+        enableScripting:
+          false
+
       });
+
 
     const pdf =
       await loadingTask.promise;
 
+
     totalPages +=
       pdf.numPages;
+
 
     for (
       let pageNumber = 1;
@@ -2157,8 +2552,10 @@ async function buildPdfSearchIndex() {
           pageNumber
         );
 
+
       const content =
         await page.getTextContent();
+
 
       const text =
         content.items
@@ -2169,6 +2566,7 @@ async function buildPdfSearchIndex() {
           .join(' ')
           .replace(/\s+/g, ' ')
           .trim();
+
 
       if (text) {
 
@@ -2183,7 +2581,9 @@ async function buildPdfSearchIndex() {
             text
           )
         );
+
       }
+
 
       if (
         pageNumber === 1 ||
@@ -2194,22 +2594,35 @@ async function buildPdfSearchIndex() {
         state.searchIndex =
           rows.slice();
 
+
         if (
           state.screen === 'search'
         ) {
+
           render();
+
         }
+
       }
+
     }
 
+
     try {
+
       await pdf.destroy();
+
     } catch (e) {}
+
   }
 
+
   return {
+
     rows,
+
     totalPages
+
   };
 }
 
@@ -2220,18 +2633,29 @@ async function buildSearchIndex() {
     state.searchReady ||
     state.searchLoading
   ) {
+
     return;
+
   }
 
-  state.searchLoading = true;
 
-  if (state.screen === 'search') {
+  state.searchLoading =
+    true;
+
+
+  if (
+    state.screen === 'search'
+  ) {
+
     render();
+
   }
+
 
   try {
 
     let sampleResults = [];
+
 
     try {
 
@@ -2243,15 +2667,20 @@ async function buildSearchIndex() {
           }
         );
 
+
       if (!response.ok) {
+
         throw new Error(
           'HTTP ' +
           response.status
         );
+
       }
+
 
       const book =
         await response.json();
+
 
       (book.chapters || [])
         .forEach(
@@ -2318,10 +2747,12 @@ async function buildSearchIndex() {
                           verse.slovenian
                         ].join(' ')
                       )
+
                   });
 
                 }
               );
+
           }
         );
 
@@ -2330,6 +2761,7 @@ async function buildSearchIndex() {
       const book =
         FALLBACK_BOOK;
 
+
       (book.chapters || [])
         .forEach(
           (
@@ -2395,16 +2827,20 @@ async function buildSearchIndex() {
                           verse.slovenian
                         ].join(' ')
                       )
+
                   });
 
                 }
               );
+
           }
         );
+
     }
 
 
     let cachedRows = [];
+
 
     try {
 
@@ -2473,6 +2909,7 @@ async function buildSearchIndex() {
       pdfRows =
         cachedPdfRows;
 
+
       console.log(
         'Rāgānugā Search: saved index found.',
         pdfRows.length,
@@ -2482,25 +2919,33 @@ async function buildSearchIndex() {
     } else {
 
       try {
+
         await clearSearchDatabase();
+
       } catch (error) {
+
         console.warn(
           'Could not clear old search index:',
           error
         );
+
       }
+
 
       const built =
         await buildPdfSearchIndex();
 
+
       pdfRows =
         built.rows;
+
 
       try {
 
         await saveSearchRows(
           pdfRows
         );
+
 
         console.log(
           'Rāgānugā Search: PDF index saved.',
@@ -2516,6 +2961,7 @@ async function buildSearchIndex() {
         );
 
       }
+
     }
 
 
@@ -2524,7 +2970,10 @@ async function buildSearchIndex() {
         pdfRows
       );
 
-    state.searchReady = true;
+
+    state.searchReady =
+      true;
+
 
   } catch (error) {
 
@@ -2533,9 +2982,13 @@ async function buildSearchIndex() {
       error
     );
 
-    state.searchIndex = [];
 
-    state.searchReady = false;
+    state.searchIndex =
+      [];
+
+    state.searchReady =
+      false;
+
 
     toast(
       state.lang === 'sl'
@@ -2543,28 +2996,37 @@ async function buildSearchIndex() {
         : 'Could not prepare the library search.'
     );
 
+
   } finally {
 
-    state.searchLoading = false;
+    state.searchLoading =
+      false;
+
 
     if (
       state.screen === 'search'
     ) {
+
       render();
+
     }
+
   }
 }
 
 
 /* =========================================================
-   SEARCH QUERY
+   SEARCH
    ========================================================= */
 
 function setSearchQuery(value) {
 
-  state.query = value;
+  state.query =
+    value;
+
 
   render();
+
 
   if (
     searchFocusFrame !== null
@@ -2574,46 +3036,65 @@ function setSearchQuery(value) {
       searchFocusFrame
     );
 
-    searchFocusFrame = null;
+
+    searchFocusFrame =
+      null;
+
   }
 
 
   searchFocusFrame =
-    requestAnimationFrame(() => {
+    requestAnimationFrame(
+      () => {
 
-      searchFocusFrame = null;
+        searchFocusFrame =
+          null;
 
-      if (
-        state.screen !== 'search'
-      ) {
-        return;
+
+        if (
+          state.screen !== 'search'
+        ) {
+
+          return;
+
+        }
+
+
+        const input =
+          document.querySelector(
+            '.search'
+          );
+
+
+        if (input) {
+
+          input.focus();
+
+
+          const end =
+            input.value.length;
+
+
+          input.setSelectionRange(
+            end,
+            end
+          );
+
+        }
+
       }
-
-      const input =
-        document.querySelector(
-          '.search'
-        );
-
-      if (input) {
-
-        input.focus();
-
-        const end =
-          input.value.length;
-
-        input.setSelectionRange(
-          end,
-          end
-        );
-      }
-    });
+    );
 }
 
 
 function setSearchFilter(value) {
-  state.filter = value;
+
+  state.filter =
+    value;
+
   save();
   render();
+
 }
 
 
@@ -2624,12 +3105,14 @@ function getVisibleSearchResults() {
       state.query.trim()
     );
 
+
   let results =
     state.searchIndex;
 
 
   if (
-    state.filter === 'Slovenian'
+    state.filter ===
+    'Slovenian'
   ) {
 
     results =
@@ -2638,12 +3121,11 @@ function getVisibleSearchResults() {
           item.bookId ===
           'sample-book'
       );
+
   }
 
 
-  if (
-    query
-  ) {
+  if (query) {
 
     results =
       results.filter(
@@ -2664,11 +3146,14 @@ function getVisibleSearchResults() {
               ].join(' ')
             );
 
+
           return text.includes(
             query
           );
+
         }
       );
+
   }
 
 
@@ -2684,6 +3169,7 @@ function search() {
   ) {
 
     buildSearchIndex();
+
   }
 
 
@@ -2696,6 +3182,7 @@ function search() {
       <h2>
         ${t('search')}
       </h2>
+
 
       <input
         class="search"
@@ -2711,6 +3198,7 @@ function search() {
           'acrossBooks'
         )}">
 
+
       <div
         class="muted"
         style="
@@ -2724,6 +3212,7 @@ function search() {
         }
 
       </div>
+
 
       ${
         state.searchIndex.length
@@ -2741,6 +3230,7 @@ function search() {
       }
 
     `);
+
   }
 
 
@@ -2831,7 +3321,6 @@ function search() {
 
     ${
       results.length
-
         ? results
             .slice(0, 100)
             .map(
@@ -3001,44 +3490,52 @@ function openSearchResult(index) {
   const visibleResults =
     getVisibleSearchResults();
 
+
   const result =
     visibleResults[index];
+
 
   if (!result) {
     return;
   }
 
 
-  if (
-    result.pdf
-  ) {
+  if (result.pdf) {
 
     state.screen =
       'search';
 
+
     save();
+
 
     openPdf(
       result.pdf,
       result.page
     );
 
+
     return;
   }
 
 
-  state.book = 0;
+  state.book =
+    0;
+
 
   state.loadedBookId =
     'sample-book';
+
 
   state.chapter =
     Number(
       result.chapterIndex
     ) || 0;
 
+
   state.screen =
     'reader';
+
 
   save();
   render();
@@ -3051,79 +3548,101 @@ function openSearchResult(index) {
   ) {
 
     loadSampleBook()
-      .then(() => {
+      .then(
+        () => {
 
-        state.chapter =
-          Number(
-            result.chapterIndex
-          ) || 0;
+          state.chapter =
+            Number(
+              result.chapterIndex
+            ) || 0;
 
-        save();
-        render();
+
+          save();
+          render();
+
+
+          scrollToVerse(
+            result.ref
+          );
+
+        }
+      );
+
+  } else {
+
+    setTimeout(
+      () => {
 
         scrollToVerse(
           result.ref
         );
 
-      });
+      },
+      100
+    );
 
-  } else {
-
-    setTimeout(() => {
-
-      scrollToVerse(
-        result.ref
-      );
-
-    }, 100);
   }
 }
 
 
 function scrollToVerse(ref) {
 
-  setTimeout(() => {
+  setTimeout(
+    () => {
 
-    const verses =
-      document.querySelectorAll(
-        '.verse'
-      );
-
-    for (
-      const verse of verses
-    ) {
-
-      const reference =
-        verse.querySelector(
-          '.ref'
+      const verses =
+        document.querySelectorAll(
+          '.verse'
         );
 
-      if (
-        reference &&
-        reference.textContent
-          .trim() ===
-          String(ref)
+
+      for (
+        const verse of verses
       ) {
 
-        verse.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center'
-        });
+        const reference =
+          verse.querySelector(
+            '.ref'
+          );
 
-        verse.style.outline =
-          '2px solid currentColor';
 
-        setTimeout(() => {
+        if (
+          reference &&
+          reference.textContent
+            .trim() ===
+            String(ref)
+        ) {
 
-          verse.style.outline = '';
+          verse.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
 
-        }, 1800);
 
-        break;
+          verse.style.outline =
+            '2px solid currentColor';
+
+
+          setTimeout(
+            () => {
+
+              verse.style.outline =
+                '';
+
+            },
+            1800
+          );
+
+
+          break;
+
+        }
+
       }
-    }
 
-  }, 150);
+    },
+    150
+  );
 }
 
 
@@ -3149,7 +3668,9 @@ function toggleLectureSource(index) {
       ...state.sources,
       index
     ];
+
   }
+
 
   save();
   render();
@@ -3188,11 +3709,15 @@ function setPoemPrompt(value) {
    AI PASSAGE SELECTION
    ========================================================= */
 
-function findAiPassages(instructionText) {
+function findAiPassages(
+  instructionText
+) {
 
   const normalizedInstruction =
     normalizeSearchText(
-      String(instructionText || '').trim()
+      String(
+        instructionText || ''
+      ).trim()
     );
 
 
@@ -3265,7 +3790,9 @@ function findAiPassages(instructionText) {
             if (
               text.includes(word)
             ) {
+
               score += 1;
+
             }
 
           }
@@ -3289,6 +3816,7 @@ function findAiPassages(instructionText) {
             row.bookTitle || ''
           );
 
+
         const authorText =
           normalizeSearchText(
             row.author || ''
@@ -3299,15 +3827,24 @@ function findAiPassages(instructionText) {
           word => {
 
             if (
-              titleText.includes(word)
+              titleText.includes(
+                word
+              )
             ) {
+
               score += 2;
+
             }
 
+
             if (
-              authorText.includes(word)
+              authorText.includes(
+                word
+              )
             ) {
+
               score += 1;
+
             }
 
           }
@@ -3315,8 +3852,12 @@ function findAiPassages(instructionText) {
 
 
         return {
+
           ...row,
-          aiScore: score
+
+          aiScore:
+            score
+
         };
 
       }
@@ -3344,6 +3885,7 @@ function findAiPassages(instructionText) {
 
           }
 
+
           return (
             Number(a.page || 0) -
             Number(b.page || 0)
@@ -3355,43 +3897,290 @@ function findAiPassages(instructionText) {
 
   return candidates
     .slice(0, 24)
-    .map(row => {
+    .map(
+      row => {
 
-      const rawText =
-        String(
-          row.sanskrit ||
-          row.english ||
-          ''
-        )
-        .replace(/\s+/g, ' ')
-        .trim();
-
-
-      const text =
-        rawText.length > 2600
-          ? rawText.slice(
-              0,
-              2600
-            ) + '…'
-          : rawText;
+        const rawText =
+          String(
+            row.sanskrit ||
+            row.english ||
+            ''
+          )
+          .replace(/\s+/g, ' ')
+          .trim();
 
 
-      return {
+        const text =
+          rawText.length > 2600
+            ? rawText.slice(
+                0,
+                2600
+              ) + '…'
+            : rawText;
 
-        bookTitle:
-          row.bookTitle || '',
 
-        author:
-          row.author || '',
+        return {
 
-        page:
-          row.page || '',
+          bookTitle:
+            row.bookTitle ||
+            '',
 
-        text
+          author:
+            row.author ||
+            '',
 
-      };
+          page:
+            row.page ||
+            '',
 
-    });
+          text
+
+        };
+
+      }
+    );
+}
+
+
+/* =========================================================
+   SAVE GENERATED WORK
+   ========================================================= */
+
+function saveGeneratedWork(work) {
+
+  const item = {
+
+    id:
+      'work-' +
+      Date.now() +
+      '-' +
+      Math.random()
+        .toString(36)
+        .slice(2, 8),
+
+    type:
+      work.type,
+
+    title:
+      work.title ||
+      (
+        work.type === 'poem'
+          ? t('aiPoem')
+          : t('aiLecture')
+      ),
+
+    prompt:
+      work.prompt ||
+      '',
+
+    language:
+      work.language ||
+      '',
+
+    length:
+      work.length ||
+      '',
+
+    content:
+      work.content ||
+      '',
+
+    passages:
+      Array.isArray(work.passages)
+        ? work.passages
+        : [],
+
+    createdAt:
+      new Date().toISOString()
+
+  };
+
+
+  state.works = [
+    item,
+    ...state.works
+      .filter(
+        existing =>
+          existing &&
+          existing.id !==
+            item.id
+      )
+  ];
+
+
+  /*
+   * Keep the local library manageable.
+   * The newest 20 works are kept.
+   */
+
+  state.works =
+    state.works.slice(
+      0,
+      20
+    );
+
+
+  save();
+
+  return item;
+}
+
+
+function formatWorkDate(
+  value
+) {
+
+  if (!value) {
+    return '';
+  }
+
+
+  try {
+
+    return new Date(
+      value
+    ).toLocaleString(
+      state.lang === 'sl'
+        ? 'sl-SI'
+        : 'en-US',
+      {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      }
+    );
+
+  } catch (error) {
+
+    return '';
+
+  }
+}
+
+
+function openSavedWork(index) {
+
+  const work =
+    state.works[index];
+
+
+  if (!work) {
+    return;
+  }
+
+
+  if (
+    work.type === 'poem'
+  ) {
+
+    state.creationType =
+      'poem';
+
+    state.poemPrompt =
+      work.prompt ||
+      '';
+
+    state.generatedPoem =
+      work.content ||
+      '';
+
+    state.poemPassages =
+      Array.isArray(
+        work.passages
+      )
+        ? work.passages
+        : [];
+
+    state.poemError =
+      '';
+
+
+    state.poemGenerating =
+      false;
+
+  } else {
+
+    state.creationType =
+      'lecture';
+
+    state.lectureTopic =
+      work.prompt ||
+      work.title ||
+      '';
+
+    state.generatedLecture =
+      work.content ||
+      '';
+
+    state.lectureLength =
+      String(
+        work.length ||
+        '20'
+      );
+
+    state.lecturePassages =
+      Array.isArray(
+        work.passages
+      )
+        ? work.passages
+        : [];
+
+    state.lectureError =
+      '';
+
+
+    state.lectureGenerating =
+      false;
+
+  }
+
+
+  state.screen =
+    'result';
+
+
+  save();
+  render();
+
+
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
+}
+
+
+function removeSavedWork(index) {
+
+  if (
+    index < 0 ||
+    index >= state.works.length
+  ) {
+
+    return;
+
+  }
+
+
+  state.works.splice(
+    index,
+    1
+  );
+
+
+  save();
+  render();
+
+
+  setTimeout(
+    () => {
+
+      toast(
+        t('removed')
+      );
+
+    },
+    50
+  );
 }
 
 
@@ -3429,12 +4218,24 @@ async function generate() {
   }
 
 
-  state.creationType = 'lecture';
-  state.lectureGenerating = true;
-  state.generatedLecture = '';
-  state.lectureError = '';
-  state.lecturePassages = [];
-  state.screen = 'result';
+  state.creationType =
+    'lecture';
+
+  state.lectureGenerating =
+    true;
+
+  state.generatedLecture =
+    '';
+
+  state.lectureError =
+    '';
+
+  state.lecturePassages =
+    [];
+
+  state.screen =
+    'result';
+
 
   save();
   render();
@@ -3443,7 +4244,9 @@ async function generate() {
   try {
 
     if (!state.searchReady) {
+
       await buildSearchIndex();
+
     }
 
 
@@ -3460,11 +4263,13 @@ async function generate() {
           ? 'V izbranih knjigah za to temo ni bilo mogoče najti ustreznih strani.'
           : 'No relevant pages were found in the selected books.'
       );
+
     }
 
 
     state.lecturePassages =
       selected;
+
 
     save();
     render();
@@ -3477,12 +4282,15 @@ async function generate() {
           method: 'POST',
 
           headers: {
+
             'Content-Type':
               'application/json'
+
           },
 
           body:
             JSON.stringify({
+
               type:
                 'lecture',
 
@@ -3502,20 +4310,27 @@ async function generate() {
 
               passages:
                 selected
+
             })
         }
       );
 
 
-    let data = null;
+    let data =
+      null;
+
 
     try {
+
       data =
         await response.json();
+
     } catch (error) {
+
       throw new Error(
         'The AI service returned an invalid response.'
       );
+
     }
 
 
@@ -3529,6 +4344,7 @@ async function generate() {
         data?.error ||
         `AI service returned HTTP ${response.status}.`
       );
+
     }
 
 
@@ -3541,22 +4357,65 @@ async function generate() {
       ).trim();
 
 
-    if (!state.generatedLecture) {
+    if (
+      !state.generatedLecture
+    ) {
 
       throw new Error(
         state.lang === 'sl'
           ? 'AI ni vrnil vsebine predavanja.'
           : 'The AI returned an empty lecture.'
       );
+
     }
 
 
-    state.lectureError = '';
-    state.lectureGenerating = false;
-    state.screen = 'result';
+    /*
+     * Save the finished lecture
+     * as a separate work.
+     */
+
+    saveGeneratedWork({
+
+      type:
+        'lecture',
+
+      title:
+        state.lectureTopic.trim(),
+
+      prompt:
+        state.lectureTopic.trim(),
+
+      language:
+        state.lang === 'sl'
+          ? 'Slovenščina'
+          : 'English',
+
+      length:
+        state.lectureLength,
+
+      content:
+        state.generatedLecture,
+
+      passages:
+        state.lecturePassages
+
+    });
+
+
+    state.lectureError =
+      '';
+
+    state.lectureGenerating =
+      false;
+
+    state.screen =
+      'result';
+
 
     save();
     render();
+
 
     window.scrollTo({
       top: 0,
@@ -3575,6 +4434,7 @@ async function generate() {
     state.lectureGenerating =
       false;
 
+
     state.lectureError =
       error?.message ||
       (
@@ -3583,7 +4443,10 @@ async function generate() {
           : 'Could not generate the lecture.'
       );
 
-    state.screen = 'result';
+
+    state.screen =
+      'result';
+
 
     save();
     render();
@@ -3626,12 +4489,24 @@ async function generatePoem() {
   }
 
 
-  state.creationType = 'poem';
-  state.poemGenerating = true;
-  state.generatedPoem = '';
-  state.poemError = '';
-  state.poemPassages = [];
-  state.screen = 'result';
+  state.creationType =
+    'poem';
+
+  state.poemGenerating =
+    true;
+
+  state.generatedPoem =
+    '';
+
+  state.poemError =
+    '';
+
+  state.poemPassages =
+    [];
+
+  state.screen =
+    'result';
+
 
   save();
   render();
@@ -3640,7 +4515,9 @@ async function generatePoem() {
   try {
 
     if (!state.searchReady) {
+
       await buildSearchIndex();
+
     }
 
 
@@ -3657,11 +4534,13 @@ async function generatePoem() {
           ? 'V izbranih knjigah za to pesem ni bilo mogoče najti ustreznih strani.'
           : 'No relevant pages were found in the selected books.'
       );
+
     }
 
 
     state.poemPassages =
       selected;
+
 
     save();
     render();
@@ -3674,12 +4553,15 @@ async function generatePoem() {
           method: 'POST',
 
           headers: {
+
             'Content-Type':
               'application/json'
+
           },
 
           body:
             JSON.stringify({
+
               type:
                 'poem',
 
@@ -3693,20 +4575,27 @@ async function generatePoem() {
 
               passages:
                 selected
+
             })
         }
       );
 
 
-    let data = null;
+    let data =
+      null;
+
 
     try {
+
       data =
         await response.json();
+
     } catch (error) {
+
       throw new Error(
         'The AI service returned an invalid response.'
       );
+
     }
 
 
@@ -3720,6 +4609,7 @@ async function generatePoem() {
         data?.error ||
         `AI service returned HTTP ${response.status}.`
       );
+
     }
 
 
@@ -3732,22 +4622,62 @@ async function generatePoem() {
       ).trim();
 
 
-    if (!state.generatedPoem) {
+    if (
+      !state.generatedPoem
+    ) {
 
       throw new Error(
         state.lang === 'sl'
           ? 'AI ni vrnil pesmi.'
           : 'The AI returned an empty poem.'
       );
+
     }
 
 
-    state.poemError = '';
-    state.poemGenerating = false;
-    state.screen = 'result';
+    /*
+     * Save the finished poem
+     * as a separate work.
+     */
+
+    saveGeneratedWork({
+
+      type:
+        'poem',
+
+      title:
+        state.poemPrompt.trim(),
+
+      prompt:
+        state.poemPrompt.trim(),
+
+      language:
+        state.lang === 'sl'
+          ? 'Slovenščina'
+          : 'English',
+
+      content:
+        state.generatedPoem,
+
+      passages:
+        state.poemPassages
+
+    });
+
+
+    state.poemError =
+      '';
+
+    state.poemGenerating =
+      false;
+
+    state.screen =
+      'result';
+
 
     save();
     render();
+
 
     window.scrollTo({
       top: 0,
@@ -3766,6 +4696,7 @@ async function generatePoem() {
     state.poemGenerating =
       false;
 
+
     state.poemError =
       error?.message ||
       (
@@ -3774,7 +4705,10 @@ async function generatePoem() {
           : 'Could not generate the poem.'
       );
 
-    state.screen = 'result';
+
+    state.screen =
+      'result';
+
 
     save();
     render();
@@ -3804,22 +4738,27 @@ function create() {
         <div class="dot"></div>
 
         <h2 style="margin-top:20px">
+
           ${
             state.lang === 'sl'
               ? 'AI pripravlja predavanje…'
               : 'AI is preparing your lecture…'
           }
+
         </h2>
 
         <div class="muted">
+
           ${escapeHtml(
             state.lectureTopic
           )}
+
         </div>
 
       </div>
 
     `);
+
   }
 
 
@@ -3834,22 +4773,27 @@ function create() {
         <div class="dot"></div>
 
         <h2 style="margin-top:20px">
+
           ${
             state.lang === 'sl'
               ? 'AI pripravlja pesem…'
               : 'AI is preparing your poem…'
           }
+
         </h2>
 
         <div class="muted">
+
           ${escapeHtml(
             state.poemPrompt
           )}
+
         </div>
 
       </div>
 
     `);
+
   }
 
 
@@ -3858,6 +4802,7 @@ function create() {
     <div class="eyebrow">
       ${t('create')}
     </div>
+
 
     <h1>
       ${t('create')}
@@ -3880,7 +4825,8 @@ function create() {
         </h3>
 
         <span class="muted">
-          ${selectedCount} ${t('selectedBooks')}
+          ${selectedCount}
+          ${t('selectedBooks')}
         </span>
 
       </div>
@@ -3900,11 +4846,16 @@ function create() {
                 index
               );
 
+
             return `
 
               <button
                 type="button"
-                class="select ${selected ? 'on' : ''}"
+                class="select ${
+                  selected
+                    ? 'on'
+                    : ''
+                }"
                 style="
                   text-align:left;
                   padding:15px;
@@ -3946,6 +4897,7 @@ function create() {
 
                 </span>
 
+
                 <span
                   style="
                     font-size:20px;
@@ -3963,6 +4915,7 @@ function create() {
               </button>
 
             `;
+
           }
         ).join('')}
 
@@ -3991,6 +4944,7 @@ function create() {
 
       </div>
 
+
       <p
         class="muted"
         style="
@@ -4010,6 +4964,7 @@ function create() {
       <h3>
         ${t('lectureTopic')}
       </h3>
+
 
       <textarea
         class="textarea"
@@ -4037,6 +4992,7 @@ function create() {
         ${t('lectureLength')}
       </h3>
 
+
       <div
         class="formgrid"
         style="margin-top:10px">
@@ -4053,7 +5009,9 @@ function create() {
             <button
               type="button"
               class="select ${
-                String(state.lectureLength) ===
+                String(
+                  state.lectureLength
+                ) ===
                 String(value)
                   ? 'on'
                   : ''
@@ -4082,6 +5040,7 @@ function create() {
         ${t('lectureLanguage')}
       </h3>
 
+
       <div
         class="chips"
         style="margin-top:10px">
@@ -4100,6 +5059,7 @@ function create() {
           🇸🇮 Slovenščina
 
         </button>
+
 
         <button
           type="button"
@@ -4138,7 +5098,8 @@ function create() {
         margin-top:12px
       ">
 
-      ${selectedCount} ${t('selectedBooks')}
+      ${selectedCount}
+      ${t('selectedBooks')}
 
     </div>
 
@@ -4154,6 +5115,7 @@ function create() {
       <h2 style="margin:0">
         ${t('aiPoem')}
       </h2>
+
 
       <p
         class="muted"
@@ -4174,6 +5136,7 @@ function create() {
       <h3>
         ${t('poemPrompt')}
       </h3>
+
 
       <textarea
         class="textarea"
@@ -4211,7 +5174,8 @@ function create() {
           margin-top:12px
         ">
 
-        ${selectedCount} ${t('selectedBooks')}
+        ${selectedCount}
+        ${t('selectedBooks')}
 
       </div>
 
@@ -4233,75 +5197,103 @@ function formatLecture(text) {
 
 
   return lines
-    .map(line => {
+    .map(
+      line => {
 
-      const clean =
-        line.trim();
-
-
-      if (!clean) {
-        return '<div style="height:10px"></div>';
-      }
+        const clean =
+          line.trim();
 
 
-      const escaped =
-        escapeHtml(clean);
+        if (!clean) {
+
+          return (
+            '<div style="height:10px"></div>'
+          );
+
+        }
 
 
-      if (
-        escaped.startsWith('### ')
-      ) {
-
-        return `
-          <h4 style="margin-top:24px">
-            ${escaped.slice(4)}
-          </h4>
-        `;
-
-      }
+        const escaped =
+          escapeHtml(clean);
 
 
-      if (
-        escaped.startsWith('## ')
-      ) {
+        if (
+          escaped.startsWith(
+            '### '
+          )
+        ) {
 
-        return `
-          <h3 style="margin-top:28px">
-            ${escaped.slice(3)}
-          </h3>
-        `;
+          return `
 
-      }
+            <h4
+              style="margin-top:24px">
 
+              ${escaped.slice(4)}
 
-      if (
-        escaped.startsWith('# ')
-      ) {
+            </h4>
 
-        return `
-          <h2 style="margin-top:28px">
-            ${escaped.slice(2)}
-          </h2>
-        `;
+          `;
 
-      }
+        }
 
 
-      const formatted =
-        escaped
-          .replace(
+        if (
+          escaped.startsWith(
+            '## '
+          )
+        ) {
+
+          return `
+
+            <h3
+              style="margin-top:28px">
+
+              ${escaped.slice(3)}
+
+            </h3>
+
+          `;
+
+        }
+
+
+        if (
+          escaped.startsWith(
+            '# '
+          )
+        ) {
+
+          return `
+
+            <h2
+              style="margin-top:28px">
+
+              ${escaped.slice(2)}
+
+            </h2>
+
+          `;
+
+        }
+
+
+        const formatted =
+          escaped.replace(
             /\*\*(.*?)\*\*/g,
             '<strong>$1</strong>'
           );
 
 
-      return `
-        <p class="english">
-          ${formatted}
-        </p>
-      `;
+        return `
 
-    })
+          <p class="english">
+            ${formatted}
+          </p>
+
+        `;
+
+      }
+    )
     .join('');
 }
 
@@ -4314,6 +5306,7 @@ function formatPoem(text) {
 
 
   return `
+
     <div
       style="
         max-width:850px;
@@ -4323,104 +5316,124 @@ function formatPoem(text) {
 
       ${
         lines
-          .map(line => {
+          .map(
+            line => {
 
-            const clean =
-              line.trim();
-
-
-            if (!clean) {
-              return '<div style="height:10px"></div>';
-            }
+              const clean =
+                line.trim();
 
 
-            const escaped =
-              escapeHtml(clean);
+              if (!clean) {
+
+                return (
+                  '<div style="height:10px"></div>'
+                );
+
+              }
 
 
-            if (
-              escaped.startsWith('### ')
-            ) {
-
-              return `
-                <h4
-                  style="
-                    margin-top:24px;
-                    margin-bottom:8px
-                  ">
-
-                  ${escaped.slice(4)}
-
-                </h4>
-              `;
-
-            }
+              const escaped =
+                escapeHtml(clean);
 
 
-            if (
-              escaped.startsWith('## ')
-            ) {
+              if (
+                escaped.startsWith(
+                  '### '
+                )
+              ) {
 
-              return `
-                <h3
-                  style="
-                    margin-top:28px;
-                    margin-bottom:10px
-                  ">
+                return `
 
-                  ${escaped.slice(3)}
+                  <h4
+                    style="
+                      margin-top:24px;
+                      margin-bottom:8px
+                    ">
 
-                </h3>
-              `;
+                    ${escaped.slice(4)}
 
-            }
+                  </h4>
 
+                `;
 
-            if (
-              escaped.startsWith('# ')
-            ) {
-
-              return `
-                <h2
-                  style="
-                    margin-top:28px;
-                    margin-bottom:12px
-                  ">
-
-                  ${escaped.slice(2)}
-
-                </h2>
-              `;
-
-            }
+              }
 
 
-            const formatted =
-              escaped
-                .replace(
+              if (
+                escaped.startsWith(
+                  '## '
+                )
+              ) {
+
+                return `
+
+                  <h3
+                    style="
+                      margin-top:28px;
+                      margin-bottom:10px
+                    ">
+
+                    ${escaped.slice(3)}
+
+                  </h3>
+
+                `;
+
+              }
+
+
+              if (
+                escaped.startsWith(
+                  '# '
+                )
+              ) {
+
+                return `
+
+                  <h2
+                    style="
+                      margin-top:28px;
+                      margin-bottom:12px
+                    ">
+
+                    ${escaped.slice(2)}
+
+                  </h2>
+
+                `;
+
+              }
+
+
+              const formatted =
+                escaped.replace(
                   /\*\*(.*?)\*\*/g,
                   '<strong>$1</strong>'
                 );
 
 
-            return `
-              <div
-                style="
-                  font-size:17px;
-                  line-height:1.9;
-                  margin:0 0 6px;
-                ">
+              return `
 
-                ${formatted}
+                <div
+                  style="
+                    font-size:17px;
+                    line-height:1.9;
+                    margin:0 0 6px;
+                  ">
 
-              </div>
-            `;
+                  ${formatted}
 
-          })
+                </div>
+
+              `;
+
+            }
+          )
           .join('')
       }
 
     </div>
+
   `;
 }
 
@@ -4442,17 +5455,22 @@ function result() {
         <div class="dot"></div>
 
         <h2 style="margin-top:20px">
+
           ${
             state.lang === 'sl'
               ? 'AI pripravlja predavanje…'
               : 'AI is preparing your lecture…'
           }
+
         </h2>
 
+
         <div class="muted">
+
           ${escapeHtml(
             state.lectureTopic
           )}
+
         </div>
 
       </div>
@@ -4472,17 +5490,22 @@ function result() {
         <div class="dot"></div>
 
         <h2 style="margin-top:20px">
+
           ${
             state.lang === 'sl'
               ? 'AI pripravlja pesem…'
               : 'AI is preparing your poem…'
           }
+
         </h2>
 
+
         <div class="muted">
+
           ${escapeHtml(
             state.poemPrompt
           )}
+
         </div>
 
       </div>
@@ -4492,7 +5515,8 @@ function result() {
 
 
   if (
-    state.creationType === 'poem'
+    state.creationType ===
+    'poem'
   ) {
 
     if (
@@ -4507,8 +5531,11 @@ function result() {
             type="button"
             class="back"
             onclick="go('create')">
+
             ‹
+
           </button>
+
 
           <div style="flex:1">
 
@@ -4524,17 +5551,22 @@ function result() {
         <div class="section card">
 
           <h3>
+
             ${
               state.lang === 'sl'
                 ? 'Pesmi ni bilo mogoče ustvariti'
                 : 'Could not create the poem'
             }
+
           </h3>
 
+
           <p class="muted">
+
             ${escapeHtml(
               state.poemError
             )}
+
           </p>
 
         </div>
@@ -4561,14 +5593,18 @@ function result() {
           type="button"
           class="back"
           onclick="go('create')">
+
           ‹
+
         </button>
+
 
         <div style="flex:1">
 
           <strong>
             ${t('aiPoem')}
           </strong>
+
 
           <div class="muted">
 
@@ -4617,14 +5653,18 @@ function result() {
                 state.generatedPoem
               )
             : `
-                <div class="muted">
-                  ${
-                    state.lang === 'sl'
-                      ? 'Pesem še ni ustvarjena.'
-                      : 'The poem has not been generated yet.'
-                  }
-                </div>
-              `
+
+              <div class="muted">
+
+                ${
+                  state.lang === 'sl'
+                    ? 'Pesem še ni ustvarjena.'
+                    : 'The poem has not been generated yet.'
+                }
+
+              </div>
+
+            `
         }
 
       </div>
@@ -4640,6 +5680,7 @@ function result() {
                 ${t('sources')}
               </h3>
 
+
               <div
                 class="muted"
                 style="margin-top:10px">
@@ -4650,11 +5691,13 @@ function result() {
                       (passage, index) =>
                         `${index + 1}. ${
                           escapeHtml(
-                            passage.bookTitle || ''
+                            passage.bookTitle ||
+                            ''
                           )
                         } — ${
                           escapeHtml(
-                            passage.author || ''
+                            passage.author ||
+                            ''
                           )
                         }${
                           passage.page
@@ -4703,8 +5746,11 @@ function result() {
           type="button"
           class="back"
           onclick="go('create')">
+
           ‹
+
         </button>
+
 
         <div style="flex:1">
 
@@ -4720,17 +5766,22 @@ function result() {
       <div class="section card">
 
         <h3>
+
           ${
             state.lang === 'sl'
               ? 'Predavanja ni bilo mogoče ustvariti'
               : 'Could not create the lecture'
           }
+
         </h3>
 
+
         <p class="muted">
+
           ${escapeHtml(
             state.lectureError
           )}
+
         </p>
 
       </div>
@@ -4757,14 +5808,18 @@ function result() {
         type="button"
         class="back"
         onclick="go('create')">
+
         ‹
+
       </button>
+
 
       <div style="flex:1">
 
         <strong>
           ${t('aiLecture')}
         </strong>
+
 
         <div class="muted">
 
@@ -4804,14 +5859,18 @@ function result() {
               state.generatedLecture
             )
           : `
-              <div class="muted">
-                ${
-                  state.lang === 'sl'
-                    ? 'Predavanje še ni ustvarjeno.'
-                    : 'The lecture has not been generated yet.'
-                }
-              </div>
-            `
+
+            <div class="muted">
+
+              ${
+                state.lang === 'sl'
+                  ? 'Predavanje še ni ustvarjeno.'
+                  : 'The lecture has not been generated yet.'
+              }
+
+            </div>
+
+          `
       }
 
     </div>
@@ -4827,6 +5886,7 @@ function result() {
               ${t('sources')}
             </h3>
 
+
             <div
               class="muted"
               style="margin-top:10px">
@@ -4837,11 +5897,13 @@ function result() {
                     (passage, index) =>
                       `${index + 1}. ${
                         escapeHtml(
-                          passage.bookTitle || ''
+                          passage.bookTitle ||
+                          ''
                         )
                       } — ${
                         escapeHtml(
-                          passage.author || ''
+                          passage.author ||
+                          ''
                         )
                       }${
                         passage.page
@@ -4887,6 +5949,7 @@ function openBookmark(index) {
   const bookmark =
     state.bookmarks[index];
 
+
   if (!bookmark) {
     return;
   }
@@ -4905,7 +5968,8 @@ function openBookmark(index) {
     BOOKS[bookIndex].sample
   ) {
 
-    state.book = 0;
+    state.book =
+      0;
 
     state.loadedBookId =
       'sample-book';
@@ -4918,39 +5982,47 @@ function openBookmark(index) {
     state.screen =
       'reader';
 
+
     save();
     render();
 
+
     loadSampleBook()
-      .then(() => {
+      .then(
+        () => {
 
-        const book =
-          getCurrentBook();
+          const book =
+            getCurrentBook();
 
-        if (
-          book.chapters &&
-          book.chapters.length
-        ) {
 
-          state.chapter =
-            Math.max(
-              0,
-              Math.min(
-                state.chapter,
-                book.chapters.length - 1
-              )
-            );
+          if (
+            book.chapters &&
+            book.chapters.length
+          ) {
+
+            state.chapter =
+              Math.max(
+                0,
+                Math.min(
+                  state.chapter,
+                  book.chapters.length - 1
+                )
+              );
+
+          }
+
+
+          save();
+          render();
+
+
+          scrollToVerse(
+            bookmark.ref
+          );
 
         }
+      );
 
-        save();
-        render();
-
-        scrollToVerse(
-          bookmark.ref
-        );
-
-      });
 
     return;
   }
@@ -4959,16 +6031,20 @@ function openBookmark(index) {
   const book =
     BOOKS[bookIndex];
 
+
   if (book.pdf) {
 
     state.book =
       bookIndex;
 
+
     save();
+
 
     openPdf(
       book.pdf
     );
+
 
     return;
   }
@@ -4999,20 +6075,32 @@ function removeBookmark(index) {
     index < 0 ||
     index >= state.bookmarks.length
   ) {
+
     return;
+
   }
+
 
   state.bookmarks.splice(
     index,
     1
   );
 
+
   save();
   render();
 
-  setTimeout(() => {
-    toast(t('removed'));
-  }, 50);
+
+  setTimeout(
+    () => {
+
+      toast(
+        t('removed')
+      );
+
+    },
+    50
+  );
 }
 
 
@@ -5021,12 +6109,257 @@ function saved() {
   const bookmarks =
     state.bookmarks;
 
+
+  const works =
+    state.works;
+
+
   return layout(`
 
     <h2>
       ${t('saved')}
     </h2>
 
+
+    <!-- =====================================================
+         GENERATED WORKS
+         ===================================================== -->
+
+    <div class="section">
+
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          margin-bottom:12px
+        ">
+
+        <h3>
+          ${t('works')}
+        </h3>
+
+
+        <span class="muted">
+          ${works.length}
+        </span>
+
+      </div>
+
+
+      ${
+        works.length
+
+          ? works
+              .map(
+                (
+                  work,
+                  index
+                ) => {
+
+                  const isPoem =
+                    work.type ===
+                    'poem';
+
+
+                  const title =
+                    work.title ||
+                    (
+                      isPoem
+                        ? t('aiPoem')
+                        : t('aiLecture')
+                    );
+
+
+                  const preview =
+                    String(
+                      work.content ||
+                      ''
+                    )
+                    .replace(
+                      /\s+/g,
+                      ' '
+                    )
+                    .trim();
+
+
+                  const shortPreview =
+                    preview.length > 170
+                      ? preview.slice(
+                          0,
+                          170
+                        ) + '…'
+                      : preview;
+
+
+                  return `
+
+                    <div
+                      class="row"
+                      style="
+                        align-items:flex-start;
+                        cursor:pointer
+                      "
+                      onclick="
+                        openSavedWork(
+                          ${index}
+                        )
+                      ">
+
+                      <div class="num">
+
+                        ${
+                          isPoem
+                            ? 'P'
+                            : 'A'
+                        }
+
+                      </div>
+
+
+                      <div class="grow">
+
+                        <div
+                          style="
+                            font-weight:600
+                          ">
+
+                          ${escapeHtml(
+                            title
+                          )}
+
+                        </div>
+
+
+                        <div
+                          class="muted"
+                          style="
+                            margin-top:4px
+                          ">
+
+                          ${
+                            isPoem
+                              ? t('poemWork')
+                              : t('lectureWork')
+                          }
+
+                          ${
+                            work.length
+                              ? ` · ${escapeHtml(
+                                  work.length
+                                )} min`
+                              : ''
+                          }
+
+                        </div>
+
+
+                        ${
+                          shortPreview
+                            ? `
+
+                              <div
+                                style="
+                                  margin-top:8px;
+                                  line-height:1.5
+                                ">
+
+                                ${escapeHtml(
+                                  shortPreview
+                                )}
+
+                              </div>
+
+                            `
+                            : ''
+                        }
+
+
+                        <div
+                          class="muted"
+                          style="
+                            margin-top:8px;
+                            font-size:11px
+                          ">
+
+                          ${t('created')}
+                          ·
+                          ${escapeHtml(
+                            formatWorkDate(
+                              work.createdAt
+                            )
+                          )}
+
+                        </div>
+
+
+                        <div
+                          style="
+                            display:flex;
+                            gap:8px;
+                            margin-top:10px
+                          ">
+
+                          <button
+                            type="button"
+                            class="chip on"
+                            onclick="
+                              event.stopPropagation();
+                              openSavedWork(
+                                ${index}
+                              );
+                            ">
+
+                            ${t('openWork')}
+
+                          </button>
+
+
+                          <button
+                            type="button"
+                            class="chip"
+                            onclick="
+                              event.stopPropagation();
+                              removeSavedWork(
+                                ${index}
+                              );
+                            ">
+
+                            ${t('deleteWork')}
+
+                          </button>
+
+                        </div>
+
+                      </div>
+
+                    </div>
+
+                  `;
+
+                }
+              )
+              .join('')
+
+          : `
+
+            <div
+              class="muted"
+              style="padding:18px 0">
+
+              ${t('noSavedWorks')}
+
+            </div>
+
+          `
+      }
+
+    </div>
+
+
+    <!-- =====================================================
+         BOOKMARKS
+         ===================================================== -->
 
     <div class="section">
 
@@ -5036,11 +6369,13 @@ function saved() {
           ★
         </div>
 
+
         <div class="grow">
 
           <div>
             ${t('bookmark')}
           </div>
+
 
           <div class="muted">
             ${bookmarks.length}
@@ -5105,7 +6440,8 @@ function saved() {
                         ·
 
                         ${escapeHtml(
-                          bookmark.ref || ''
+                          bookmark.ref ||
+                          ''
                         )}
 
                       </div>
@@ -5194,125 +6530,6 @@ function saved() {
 
     </div>
 
-
-    ${
-      state.generatedLecture
-        ? `
-
-          <div class="row">
-
-            <div class="num">
-              A
-            </div>
-
-            <div
-              class="grow"
-              onclick="go('result')"
-              style="cursor:pointer">
-
-              <div>
-                ${escapeHtml(
-                  state.lectureTopic
-                )}
-              </div>
-
-              <div class="muted">
-
-                ${state.sources.length}
-                ${t('sourcesCount')}
-                · ${state.lectureLength} min
-
-              </div>
-
-            </div>
-
-          </div>
-
-        `
-        : ''
-    }
-
-
-    ${
-      state.generatedPoem
-        ? `
-
-          <div class="row">
-
-            <div class="num">
-              P
-            </div>
-
-            <div
-              class="grow"
-              onclick="
-                state.creationType='poem';
-                save();
-                go('result');
-              "
-              style="cursor:pointer">
-
-              <div>
-                ${t('aiPoem')}
-              </div>
-
-              <div class="muted">
-
-                ${state.sources.length}
-                ${t('sourcesCount')}
-
-              </div>
-
-            </div>
-
-          </div>
-
-        `
-        : ''
-    }
-
-
-    <div class="row">
-
-      <div class="num">
-        K
-      </div>
-
-      <div class="grow">
-
-        <div>
-          Śrī Rādhā-viraha
-        </div>
-
-        <div class="muted">
-          Rāga Bhairavī · 6 lines
-        </div>
-
-      </div>
-
-    </div>
-
-
-    <div class="row">
-
-      <div class="num">
-        B
-      </div>
-
-      <div class="grow">
-
-        <div>
-          The Two Forms of Practice
-        </div>
-
-        <div class="muted">
-          Outline · 9 chapters
-        </div>
-
-      </div>
-
-    </div>
-
   `);
 }
 
@@ -5326,9 +6543,11 @@ function render() {
   const root =
     document.getElementById('app');
 
+
   if (!root) {
     return;
   }
+
 
   root.innerHTML =
 
@@ -5414,6 +6633,12 @@ window.setLectureLength =
 
 window.setPoemPrompt =
   setPoemPrompt;
+
+window.openSavedWork =
+  openSavedWork;
+
+window.removeSavedWork =
+  removeSavedWork;
 
 window.save =
   save;
