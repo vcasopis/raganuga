@@ -1,12 +1,5 @@
 const BOOKS = [
-  {
-    id: 'sample-book',
-    short: 'Rāgānugā Bhakti — Sample Book',
-    author: 'Sample Edition',
-    script: 'English · 2 chapters',
-    sample: true
-  },
-  {
+    {
     id: 'bhakti-rasamrita-sindhu',
     short: 'Bhakti-rasāmṛta-sindhu',
     author: 'Rūpa Gosvāmī',
