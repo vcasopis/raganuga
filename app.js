@@ -2437,8 +2437,22 @@ async function buildSearchIndex() {
 
 function setSearchQuery(value) {
   state.query = value;
-  save();
   render();
+
+  requestAnimationFrame(() => {
+    const input = document.querySelector('.search');
+
+    if (input) {
+      input.focus();
+
+      const end = input.value.length;
+
+      input.setSelectionRange(
+        end,
+        end
+      );
+    }
+  });
 }
 
 
