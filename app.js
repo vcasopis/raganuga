@@ -200,6 +200,7 @@ const I18N = {
     pdfPage: 'PDF · page',
     openPage: 'Open page',
     indexedPages: 'Indexed pages',
+
     aiLecture: 'AI Lecture',
     chooseBooks: 'Choose books',
     selectedBooks: 'selected',
@@ -213,6 +214,12 @@ const I18N = {
     minutes120: '120 min',
     lectureLanguage: 'Lecture language',
     createLecture: 'Create lecture',
+
+    aiPoem: 'AI Poem',
+    poemPrompt: 'Poem prompt',
+    poemPromptPlaceholder: 'Describe exactly what you want: theme, number of verses, language, style, mood, Sanskrit terms, Bengali, English, Slovenian, etc.',
+    createPoem: 'Create poem',
+
     aiNotConnected: 'AI generation will be connected next.'
   },
 
@@ -293,6 +300,7 @@ const I18N = {
     pdfPage: 'PDF · stran',
     openPage: 'Odpri stran',
     indexedPages: 'Indeksirane strani',
+
     aiLecture: 'AI predavanje',
     chooseBooks: 'Izberi knjige',
     selectedBooks: 'izbranih',
@@ -306,6 +314,12 @@ const I18N = {
     minutes120: '120 min',
     lectureLanguage: 'Jezik predavanja',
     createLecture: 'Ustvari predavanje',
+
+    aiPoem: 'AI pesem',
+    poemPrompt: 'Navodilo za pesem',
+    poemPromptPlaceholder: 'Opiši vse, kar želiš: temo, število verzov, jezik, slog, razpoloženje, sanskrtske izraze, bengalščino, angleščino, slovenščino itd.',
+    createPoem: 'Ustvari pesem',
+
     aiNotConnected: 'AI generiranje bomo povezali v naslednjem koraku.'
   }
 };
@@ -337,7 +351,15 @@ let state = {
   lectureGenerating: false,
   generatedLecture: '',
   lectureError: '',
-  lecturePassages: []
+  lecturePassages: [],
+
+  poemPrompt: '',
+  poemGenerating: false,
+  generatedPoem: '',
+  poemError: '',
+  poemPassages: [],
+
+  creationType: 'lecture'
 };
 
 
@@ -386,6 +408,33 @@ if (!Array.isArray(state.lecturePassages)) {
   state.lecturePassages = [];
 }
 
+if (typeof state.poemPrompt !== 'string') {
+  state.poemPrompt = '';
+}
+
+if (typeof state.poemGenerating !== 'boolean') {
+  state.poemGenerating = false;
+}
+
+if (typeof state.generatedPoem !== 'string') {
+  state.generatedPoem = '';
+}
+
+if (typeof state.poemError !== 'string') {
+  state.poemError = '';
+}
+
+if (!Array.isArray(state.poemPassages)) {
+  state.poemPassages = [];
+}
+
+if (
+  state.creationType !== 'poem' &&
+  state.creationType !== 'lecture'
+) {
+  state.creationType = 'lecture';
+}
+
 
 function t(key) {
   return I18N[state.lang]?.[key] || I18N.en[key] || key;
@@ -411,11 +460,19 @@ function save() {
       loadedBookId: state.loadedBookId,
       chapter: state.chapter,
       bookmarks: state.bookmarks,
+
       lectureTopic: state.lectureTopic,
       lectureLength: state.lectureLength,
       generatedLecture: state.generatedLecture,
       lectureError: state.lectureError,
-      lecturePassages: state.lecturePassages
+      lecturePassages: state.lecturePassages,
+
+      poemPrompt: state.poemPrompt,
+      generatedPoem: state.generatedPoem,
+      poemError: state.poemError,
+      poemPassages: state.poemPassages,
+
+      creationType: state.creationType
     };
 
     localStorage.setItem(
@@ -3071,7 +3128,7 @@ function scrollToVerse(ref) {
 
 
 /* =========================================================
-   AI LECTURE INTERFACE
+   AI SOURCE SELECTION
    ========================================================= */
 
 function toggleLectureSource(index) {
@@ -3118,6 +3175,230 @@ function setLectureLength(value) {
 }
 
 
+function setPoemPrompt(value) {
+
+  state.poemPrompt =
+    value;
+
+  save();
+}
+
+
+/* =========================================================
+   AI PASSAGE SELECTION
+   ========================================================= */
+
+function findAiPassages(instructionText) {
+
+  const normalizedInstruction =
+    normalizeSearchText(
+      String(instructionText || '').trim()
+    );
+
+
+  const allowedBookIds =
+    new Set(
+      state.sources
+        .map(
+          index =>
+            BOOKS[index]?.id
+        )
+        .filter(Boolean)
+    );
+
+
+  let candidates =
+    state.searchIndex.filter(
+      row =>
+        row &&
+        row.pdf &&
+        allowedBookIds.has(
+          row.bookId
+        )
+    );
+
+
+  const words =
+    normalizedInstruction
+      .split(/\s+/)
+      .map(
+        word =>
+          normalizeSearchText(
+            word.replace(
+              /^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,
+              ''
+            )
+          )
+      )
+      .filter(
+        word =>
+          word.length >= 3
+      );
+
+
+  candidates =
+    candidates.map(
+      row => {
+
+        const text =
+          row.normalized ||
+          normalizeSearchText(
+            [
+              row.bookTitle,
+              row.author,
+              row.chapterTitle,
+              row.ref,
+              row.sanskrit,
+              row.transliteration,
+              row.english,
+              row.slovenian
+            ].join(' ')
+          );
+
+
+        let score = 0;
+
+
+        words.forEach(
+          word => {
+
+            if (
+              text.includes(word)
+            ) {
+              score += 1;
+            }
+
+          }
+        );
+
+
+        if (
+          normalizedInstruction &&
+          text.includes(
+            normalizedInstruction
+          )
+        ) {
+
+          score += 5;
+
+        }
+
+
+        const titleText =
+          normalizeSearchText(
+            row.bookTitle || ''
+          );
+
+        const authorText =
+          normalizeSearchText(
+            row.author || ''
+          );
+
+
+        words.forEach(
+          word => {
+
+            if (
+              titleText.includes(word)
+            ) {
+              score += 2;
+            }
+
+            if (
+              authorText.includes(word)
+            ) {
+              score += 1;
+            }
+
+          }
+        );
+
+
+        return {
+          ...row,
+          aiScore: score
+        };
+
+      }
+    );
+
+
+  candidates =
+    candidates
+      .filter(
+        row =>
+          row.aiScore > 0
+      )
+      .sort(
+        (a, b) => {
+
+          if (
+            b.aiScore !==
+            a.aiScore
+          ) {
+
+            return (
+              b.aiScore -
+              a.aiScore
+            );
+
+          }
+
+          return (
+            Number(a.page || 0) -
+            Number(b.page || 0)
+          );
+
+        }
+      );
+
+
+  return candidates
+    .slice(0, 24)
+    .map(row => {
+
+      const rawText =
+        String(
+          row.sanskrit ||
+          row.english ||
+          ''
+        )
+        .replace(/\s+/g, ' ')
+        .trim();
+
+
+      const text =
+        rawText.length > 2600
+          ? rawText.slice(
+              0,
+              2600
+            ) + '…'
+          : rawText;
+
+
+      return {
+
+        bookTitle:
+          row.bookTitle || '',
+
+        author:
+          row.author || '',
+
+        page:
+          row.page || '',
+
+        text
+
+      };
+
+    });
+}
+
+
+/* =========================================================
+   AI LECTURE
+   ========================================================= */
+
 async function generate() {
 
   if (
@@ -3148,6 +3429,7 @@ async function generate() {
   }
 
 
+  state.creationType = 'lecture';
   state.lectureGenerating = true;
   state.generatedLecture = '';
   state.lectureError = '';
@@ -3165,207 +3447,10 @@ async function generate() {
     }
 
 
-    const topic =
-      normalizeSearchText(
+    const selected =
+      findAiPassages(
         state.lectureTopic.trim()
       );
-
-
-    const allowedBookIds =
-      new Set(
-        state.sources
-          .map(
-            index =>
-              BOOKS[index]?.id
-          )
-          .filter(Boolean)
-      );
-
-
-    let candidates =
-      state.searchIndex.filter(
-        row =>
-          row &&
-          row.pdf &&
-          allowedBookIds.has(
-            row.bookId
-          )
-      );
-
-
-    const topicWords =
-      topic
-        .split(/\s+/)
-        .map(
-          word =>
-            normalizeSearchText(
-              word.replace(
-                /^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,
-                ''
-              )
-            )
-        )
-        .filter(
-          word =>
-            word.length >= 3
-        );
-
-
-    candidates =
-      candidates.map(
-        row => {
-
-          const text =
-            row.normalized ||
-            normalizeSearchText(
-              [
-                row.bookTitle,
-                row.author,
-                row.chapterTitle,
-                row.ref,
-                row.sanskrit,
-                row.transliteration,
-                row.english,
-                row.slovenian
-              ].join(' ')
-            );
-
-
-          let score = 0;
-
-
-          topicWords.forEach(
-            word => {
-
-              if (
-                text.includes(word)
-              ) {
-                score += 1;
-              }
-
-            }
-          );
-
-
-          if (
-            topic &&
-            text.includes(topic)
-          ) {
-
-            score += 5;
-
-          }
-
-
-          const titleText =
-            normalizeSearchText(
-              row.bookTitle || ''
-            );
-
-          const authorText =
-            normalizeSearchText(
-              row.author || ''
-            );
-
-
-          topicWords.forEach(
-            word => {
-
-              if (
-                titleText.includes(word)
-              ) {
-                score += 2;
-              }
-
-              if (
-                authorText.includes(word)
-              ) {
-                score += 1;
-              }
-
-            }
-          );
-
-
-          return {
-            ...row,
-            lectureScore: score
-          };
-
-        }
-      );
-
-
-    candidates =
-      candidates
-        .filter(
-          row =>
-            row.lectureScore > 0
-        )
-        .sort(
-          (a, b) => {
-
-            if (
-              b.lectureScore !==
-              a.lectureScore
-            ) {
-
-              return (
-                b.lectureScore -
-                a.lectureScore
-              );
-
-            }
-
-            return (
-              Number(a.page || 0) -
-              Number(b.page || 0)
-            );
-
-          }
-        );
-
-
-    const selected =
-      candidates
-        .slice(0, 24)
-        .map(row => {
-
-          const rawText =
-            String(
-              row.sanskrit ||
-              row.english ||
-              ''
-            )
-            .replace(/\s+/g, ' ')
-            .trim();
-
-
-          const text =
-            rawText.length > 2600
-              ? rawText.slice(
-                  0,
-                  2600
-                ) + '…'
-              : rawText;
-
-
-          return {
-
-            bookTitle:
-              row.bookTitle || '',
-
-            author:
-              row.author || '',
-
-            page:
-              row.page || '',
-
-            text
-
-          };
-
-        });
 
 
     if (!selected.length) {
@@ -3398,7 +3483,13 @@ async function generate() {
 
           body:
             JSON.stringify({
+              type:
+                'lecture',
+
               topic:
+                state.lectureTopic.trim(),
+
+              prompt:
                 state.lectureTopic.trim(),
 
               language:
@@ -3444,6 +3535,8 @@ async function generate() {
     state.generatedLecture =
       String(
         data.lecture ||
+        data.work ||
+        data.content ||
         ''
       ).trim();
 
@@ -3499,6 +3592,201 @@ async function generate() {
 }
 
 
+/* =========================================================
+   AI POEM
+   ========================================================= */
+
+async function generatePoem() {
+
+  if (
+    !state.sources.length
+  ) {
+
+    toast(
+      state.lang === 'sl'
+        ? 'Najprej izberi vsaj eno knjigo.'
+        : 'Please select at least one book.'
+    );
+
+    return;
+  }
+
+
+  if (
+    !state.poemPrompt.trim()
+  ) {
+
+    toast(
+      state.lang === 'sl'
+        ? 'Najprej napiši navodilo za pesem.'
+        : 'Please enter a poem prompt.'
+    );
+
+    return;
+  }
+
+
+  state.creationType = 'poem';
+  state.poemGenerating = true;
+  state.generatedPoem = '';
+  state.poemError = '';
+  state.poemPassages = [];
+  state.screen = 'result';
+
+  save();
+  render();
+
+
+  try {
+
+    if (!state.searchReady) {
+      await buildSearchIndex();
+    }
+
+
+    const selected =
+      findAiPassages(
+        state.poemPrompt.trim()
+      );
+
+
+    if (!selected.length) {
+
+      throw new Error(
+        state.lang === 'sl'
+          ? 'V izbranih knjigah za to pesem ni bilo mogoče najti ustreznih strani.'
+          : 'No relevant pages were found in the selected books.'
+      );
+    }
+
+
+    state.poemPassages =
+      selected;
+
+    save();
+    render();
+
+
+    const response =
+      await fetch(
+        'https://raganuga-lecture.eyeslotus.workers.dev',
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json'
+          },
+
+          body:
+            JSON.stringify({
+              type:
+                'poem',
+
+              prompt:
+                state.poemPrompt.trim(),
+
+              language:
+                state.lang === 'sl'
+                  ? 'Slovenščina'
+                  : 'English',
+
+              passages:
+                selected
+            })
+        }
+      );
+
+
+    let data = null;
+
+    try {
+      data =
+        await response.json();
+    } catch (error) {
+      throw new Error(
+        'The AI service returned an invalid response.'
+      );
+    }
+
+
+    if (
+      !response.ok ||
+      !data ||
+      !data.success
+    ) {
+
+      throw new Error(
+        data?.error ||
+        `AI service returned HTTP ${response.status}.`
+      );
+    }
+
+
+    state.generatedPoem =
+      String(
+        data.poem ||
+        data.work ||
+        data.content ||
+        ''
+      ).trim();
+
+
+    if (!state.generatedPoem) {
+
+      throw new Error(
+        state.lang === 'sl'
+          ? 'AI ni vrnil pesmi.'
+          : 'The AI returned an empty poem.'
+      );
+    }
+
+
+    state.poemError = '';
+    state.poemGenerating = false;
+    state.screen = 'result';
+
+    save();
+    render();
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+
+
+  } catch (error) {
+
+    console.error(
+      'Poem generation error:',
+      error
+    );
+
+
+    state.poemGenerating =
+      false;
+
+    state.poemError =
+      error?.message ||
+      (
+        state.lang === 'sl'
+          ? 'Pesmi ni bilo mogoče ustvariti.'
+          : 'Could not generate the poem.'
+      );
+
+    state.screen = 'result';
+
+    save();
+    render();
+
+  }
+}
+
+
+/* =========================================================
+   CREATE
+   ========================================================= */
+
 function create() {
 
   const selectedCount =
@@ -3535,6 +3823,36 @@ function create() {
   }
 
 
+  if (
+    state.poemGenerating
+  ) {
+
+    return layout(`
+
+      <div class="working">
+
+        <div class="dot"></div>
+
+        <h2 style="margin-top:20px">
+          ${
+            state.lang === 'sl'
+              ? 'AI pripravlja pesem…'
+              : 'AI is preparing your poem…'
+          }
+        </h2>
+
+        <div class="muted">
+          ${escapeHtml(
+            state.poemPrompt
+          )}
+        </div>
+
+      </div>
+
+    `);
+  }
+
+
   return layout(`
 
     <div class="eyebrow">
@@ -3542,7 +3860,7 @@ function create() {
     </div>
 
     <h1>
-      ${t('aiLecture')}
+      ${t('create')}
     </h1>
 
 
@@ -3653,7 +3971,41 @@ function create() {
     </div>
 
 
+    <!-- =====================================================
+         AI LECTURE
+         ===================================================== -->
+
     <div class="card">
+
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          gap:12px
+        ">
+
+        <h2 style="margin:0">
+          ${t('aiLecture')}
+        </h2>
+
+      </div>
+
+      <p
+        class="muted"
+        style="
+          margin-top:8px;
+          margin-bottom:18px
+        ">
+
+        ${
+          state.lang === 'sl'
+            ? 'Ustvari predavanje iz izbranih knjig.'
+            : 'Create a lecture from the selected books.'
+        }
+
+      </p>
+
 
       <h3>
         ${t('lectureTopic')}
@@ -3790,12 +4142,87 @@ function create() {
 
     </div>
 
+
+    <!-- =====================================================
+         AI POEM
+         ===================================================== -->
+
+    <div
+      class="section card"
+      style="margin-top:32px">
+
+      <h2 style="margin:0">
+        ${t('aiPoem')}
+      </h2>
+
+      <p
+        class="muted"
+        style="
+          margin-top:8px;
+          margin-bottom:18px
+        ">
+
+        ${
+          state.lang === 'sl'
+            ? 'Pesem opiši popolnoma po svoje. V prompt lahko napišeš število verzov, jezik, slog, temo, razpoloženje in vse druge podrobnosti.'
+            : 'Describe the poem exactly as you want it. You can specify the number of verses, language, style, theme, mood and anything else.'
+        }
+
+      </p>
+
+
+      <h3>
+        ${t('poemPrompt')}
+      </h3>
+
+      <textarea
+        class="textarea"
+        style="
+          margin-top:10px;
+          min-height:190px
+        "
+        oninput="
+          setPoemPrompt(
+            this.value
+          )
+        "
+        placeholder="${t(
+          'poemPromptPlaceholder'
+        )}">${escapeHtml(
+          state.poemPrompt
+        )}</textarea>
+
+
+      <button
+        type="button"
+        class="primary"
+        style="margin-top:16px"
+        onclick="generatePoem()">
+
+        ✦ ${t('createPoem')}
+
+      </button>
+
+
+      <div
+        class="muted"
+        style="
+          text-align:center;
+          margin-top:12px
+        ">
+
+        ${selectedCount} ${t('selectedBooks')}
+
+      </div>
+
+    </div>
+
   `);
 }
 
 
 /* =========================================================
-   RESULT
+   RESULT FORMATTING
    ========================================================= */
 
 function formatLecture(text) {
@@ -3879,6 +4306,129 @@ function formatLecture(text) {
 }
 
 
+function formatPoem(text) {
+
+  const lines =
+    String(text || '')
+      .split(/\r?\n/);
+
+
+  return `
+    <div
+      style="
+        max-width:850px;
+        margin:0 auto;
+        text-align:left
+      ">
+
+      ${
+        lines
+          .map(line => {
+
+            const clean =
+              line.trim();
+
+
+            if (!clean) {
+              return '<div style="height:10px"></div>';
+            }
+
+
+            const escaped =
+              escapeHtml(clean);
+
+
+            if (
+              escaped.startsWith('### ')
+            ) {
+
+              return `
+                <h4
+                  style="
+                    margin-top:24px;
+                    margin-bottom:8px
+                  ">
+
+                  ${escaped.slice(4)}
+
+                </h4>
+              `;
+
+            }
+
+
+            if (
+              escaped.startsWith('## ')
+            ) {
+
+              return `
+                <h3
+                  style="
+                    margin-top:28px;
+                    margin-bottom:10px
+                  ">
+
+                  ${escaped.slice(3)}
+
+                </h3>
+              `;
+
+            }
+
+
+            if (
+              escaped.startsWith('# ')
+            ) {
+
+              return `
+                <h2
+                  style="
+                    margin-top:28px;
+                    margin-bottom:12px
+                  ">
+
+                  ${escaped.slice(2)}
+
+                </h2>
+              `;
+
+            }
+
+
+            const formatted =
+              escaped
+                .replace(
+                  /\*\*(.*?)\*\*/g,
+                  '<strong>$1</strong>'
+                );
+
+
+            return `
+              <div
+                style="
+                  font-size:17px;
+                  line-height:1.9;
+                  margin:0 0 6px;
+                ">
+
+                ${formatted}
+
+              </div>
+            `;
+
+          })
+          .join('')
+      }
+
+    </div>
+  `;
+}
+
+
+/* =========================================================
+   RESULT
+   ========================================================= */
+
 function result() {
 
   if (
@@ -3906,6 +4456,236 @@ function result() {
         </div>
 
       </div>
+
+    `);
+  }
+
+
+  if (
+    state.poemGenerating
+  ) {
+
+    return layout(`
+
+      <div class="working">
+
+        <div class="dot"></div>
+
+        <h2 style="margin-top:20px">
+          ${
+            state.lang === 'sl'
+              ? 'AI pripravlja pesem…'
+              : 'AI is preparing your poem…'
+          }
+        </h2>
+
+        <div class="muted">
+          ${escapeHtml(
+            state.poemPrompt
+          )}
+        </div>
+
+      </div>
+
+    `);
+  }
+
+
+  if (
+    state.creationType === 'poem'
+  ) {
+
+    if (
+      state.poemError
+    ) {
+
+      return layout(`
+
+        <div class="top">
+
+          <button
+            type="button"
+            class="back"
+            onclick="go('create')">
+            ‹
+          </button>
+
+          <div style="flex:1">
+
+            <strong>
+              ${t('aiPoem')}
+            </strong>
+
+          </div>
+
+        </div>
+
+
+        <div class="section card">
+
+          <h3>
+            ${
+              state.lang === 'sl'
+                ? 'Pesmi ni bilo mogoče ustvariti'
+                : 'Could not create the poem'
+            }
+          </h3>
+
+          <p class="muted">
+            ${escapeHtml(
+              state.poemError
+            )}
+          </p>
+
+        </div>
+
+
+        <button
+          type="button"
+          class="primary"
+          onclick="generatePoem()">
+
+          ✦ ${t('createPoem')}
+
+        </button>
+
+      `);
+    }
+
+
+    return layout(`
+
+      <div class="top">
+
+        <button
+          type="button"
+          class="back"
+          onclick="go('create')">
+          ‹
+        </button>
+
+        <div style="flex:1">
+
+          <strong>
+            ${t('aiPoem')}
+          </strong>
+
+          <div class="muted">
+
+            ${state.sources.length}
+            ${t('selectedBooks')}
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div
+        class="eyebrow"
+        style="margin-top:10px">
+
+        ${t('generatedWork')}
+
+      </div>
+
+
+      <h1>
+        ${t('aiPoem')}
+      </h1>
+
+
+      <div
+        class="muted"
+        style="
+          margin-bottom:22px
+        ">
+
+        ${escapeHtml(
+          state.poemPrompt
+        )}
+
+      </div>
+
+
+      <div class="section">
+
+        ${
+          state.generatedPoem
+            ? formatPoem(
+                state.generatedPoem
+              )
+            : `
+                <div class="muted">
+                  ${
+                    state.lang === 'sl'
+                      ? 'Pesem še ni ustvarjena.'
+                      : 'The poem has not been generated yet.'
+                  }
+                </div>
+              `
+        }
+
+      </div>
+
+
+      ${
+        state.poemPassages.length
+          ? `
+
+            <div class="card section">
+
+              <h3>
+                ${t('sources')}
+              </h3>
+
+              <div
+                class="muted"
+                style="margin-top:10px">
+
+                ${
+                  state.poemPassages
+                    .map(
+                      (passage, index) =>
+                        `${index + 1}. ${
+                          escapeHtml(
+                            passage.bookTitle || ''
+                          )
+                        } — ${
+                          escapeHtml(
+                            passage.author || ''
+                          )
+                        }${
+                          passage.page
+                            ? ` · page ${
+                                escapeHtml(
+                                  passage.page
+                                )
+                              }`
+                            : ''
+                        }`
+                    )
+                    .join('<br>')
+                }
+
+              </div>
+
+            </div>
+
+          `
+          : ''
+      }
+
+
+      <button
+        type="button"
+        class="primary"
+        onclick="go('create')">
+
+        ← ${t('create')}
+
+      </button>
 
     `);
   }
@@ -4453,6 +5233,45 @@ function saved() {
     }
 
 
+    ${
+      state.generatedPoem
+        ? `
+
+          <div class="row">
+
+            <div class="num">
+              P
+            </div>
+
+            <div
+              class="grow"
+              onclick="
+                state.creationType='poem';
+                save();
+                go('result');
+              "
+              style="cursor:pointer">
+
+              <div>
+                ${t('aiPoem')}
+              </div>
+
+              <div class="muted">
+
+                ${state.sources.length}
+                ${t('sourcesCount')}
+
+              </div>
+
+            </div>
+
+          </div>
+
+        `
+        : ''
+    }
+
+
     <div class="row">
 
       <div class="num">
@@ -4581,6 +5400,9 @@ window.openSearchResult =
 window.generate =
   generate;
 
+window.generatePoem =
+  generatePoem;
+
 window.toggleLectureSource =
   toggleLectureSource;
 
@@ -4589,6 +5411,9 @@ window.setLectureTopic =
 
 window.setLectureLength =
   setLectureLength;
+
+window.setPoemPrompt =
+  setPoemPrompt;
 
 window.save =
   save;
