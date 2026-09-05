@@ -212,6 +212,10 @@ const I18N = {
     minutes40: '40 min',
     minutes60: '60 min',
     minutes120: '120 min',
+    lecturePreparing: 'Preparing your lecture…',
+    lectureGenerating: 'AI is writing the lecture…',
+    lectureError: 'Could not generate the lecture.',
+    noLectureSources: 'No relevant passages were found in the selected books.'
     lectureLanguage: 'Lecture language',
     createLecture: 'Create lecture',
     aiNotConnected: 'AI generation will be connected next.'
@@ -306,6 +310,10 @@ const I18N = {
     minutes40: '40 min',
     minutes60: '60 min',
     minutes120: '120 min',
+    lecturePreparing: 'Pripravljam predavanje…',
+    lectureGenerating: 'AI piše predavanje…',
+    lectureError: 'Predavanja ni bilo mogoče ustvariti.',
+    noLectureSources: 'V izbranih knjigah ni bilo mogoče najti ustreznih odlomkov.'
     lectureLanguage: 'Jezik predavanja',
     createLecture: 'Ustvari predavanje',
     aiNotConnected: 'AI generiranje bomo povezali v naslednjem koraku.'
@@ -336,6 +344,10 @@ let state = {
 
   lectureTopic: '',
   lectureLength: '20'
+  lectureGenerating: false,
+  generatedLecture: '',
+  lectureError: '',
+  lecturePassages: []
 };
 
 
@@ -3081,11 +3093,9 @@ function setLectureLength(value) {
 }
 
 
-function generate() {
+async function generate() {
 
-  if (
-    !state.sources.length
-  ) {
+  if (!state.sources.length) {
 
     toast(
       state.lang === 'sl'
@@ -3094,6 +3104,324 @@ function generate() {
     );
 
     return;
+  }
+
+
+  if (!state.lectureTopic.trim()) {
+
+    toast(
+      state.lang === 'sl'
+        ? 'Najprej vpiši temo predavanja.'
+        : 'Please enter a lecture topic.'
+    );
+
+    return;
+  }
+
+
+  state.lectureGenerating = true;
+  state.generatedLecture = '';
+  state.lectureError = '';
+  state.lecturePassages = [];
+
+  render();
+
+
+  try {
+
+    /*
+      Make sure the PDF search index exists.
+      We use the same index that already powers
+      the working library search.
+    */
+
+    if (!state.searchReady) {
+      await buildSearchIndex();
+    }
+
+
+    const topic =
+      normalizeSearchText(
+        state.lectureTopic.trim()
+      );
+
+
+    /*
+      Only use PDF pages belonging to the books
+      selected by the user.
+    */
+
+    const allowedBookIds =
+      new Set(
+        state.sources
+          .map(index => BOOKS[index]?.id)
+          .filter(Boolean)
+      );
+
+
+    let candidates =
+      state.searchIndex.filter(
+        row =>
+          row &&
+          row.pdf &&
+          allowedBookIds.has(row.bookId)
+      );
+
+
+    /*
+      Break the topic into useful search words.
+      Very short words are ignored.
+    */
+
+    const topicWords =
+      topic
+        .split(/\s+/)
+        .map(word =>
+          normalizeSearchText(word)
+        )
+        .filter(
+          word =>
+            word.length >= 3
+        );
+
+
+    /*
+      Score every indexed page according to
+      how strongly it matches the lecture topic.
+    */
+
+    candidates =
+      candidates.map(
+        row => {
+
+          const text =
+            row.normalized ||
+            normalizeSearchText(
+              [
+                row.bookTitle,
+                row.author,
+                row.chapterTitle,
+                row.sanskrit,
+                row.transliteration,
+                row.english,
+                row.slovenian
+              ].join(' ')
+            );
+
+
+          let score = 0;
+
+
+          topicWords.forEach(
+            word => {
+
+              if (
+                text.includes(word)
+              ) {
+                score += 1;
+              }
+
+            }
+          );
+
+
+          /*
+            Give extra weight when the whole topic
+            phrase appears in the page.
+          */
+
+          if (
+            topic &&
+            text.includes(topic)
+          ) {
+            score += 5;
+          }
+
+
+          return {
+            ...row,
+            lectureScore: score
+          };
+
+        }
+      );
+
+
+    candidates =
+      candidates
+        .filter(
+          row =>
+            row.lectureScore > 0
+        )
+        .sort(
+          (a, b) =>
+            b.lectureScore -
+            a.lectureScore
+        );
+
+
+    /*
+      Avoid sending an enormous amount of text
+      to the AI. The best 24 pages are enough
+      for the first generation step.
+    */
+
+    const selected =
+      candidates
+        .slice(0, 24)
+        .map(row => {
+
+          const rawText =
+            String(
+              row.sanskrit ||
+              row.english ||
+              ''
+            )
+            .replace(/\s+/g, ' ')
+            .trim();
+
+
+          /*
+            Limit each page so the request remains
+            reasonably small.
+          */
+
+          const text =
+            rawText.length > 2600
+              ? rawText.slice(0, 2600) + '…'
+              : rawText;
+
+
+          return {
+            bookTitle:
+              row.bookTitle || '',
+
+            author:
+              row.author || '',
+
+            page:
+              row.page || '',
+
+            text
+          };
+
+        });
+
+
+    if (!selected.length) {
+
+      state.lectureGenerating = false;
+
+      state.lectureError =
+        t('noLectureSources');
+
+      render();
+
+      return;
+    }
+
+
+    state.lecturePassages =
+      selected;
+
+
+    state.lectureGenerating = true;
+    render();
+
+
+    /*
+      Send only the selected source passages
+      to the secure Cloudflare Worker.
+    */
+
+    const response =
+      await fetch(
+        'https://raganuga-lecture.eyeslotus.workers.dev',
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json'
+          },
+
+          body:
+            JSON.stringify({
+              topic:
+                state.lectureTopic.trim(),
+
+              language:
+                state.lang === 'sl'
+                  ? 'Slovenščina'
+                  : 'English',
+
+              length:
+                state.lectureLength,
+
+              passages:
+                selected
+            })
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    if (
+      !response.ok ||
+      !data.success
+    ) {
+
+      throw new Error(
+        data.error ||
+        'Lecture generation failed.'
+      );
+    }
+
+
+    state.generatedLecture =
+      data.lecture ||
+      '';
+
+
+    state.lectureGenerating =
+      false;
+
+
+    state.screen =
+      'result';
+
+
+    save();
+    render();
+
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+
+
+  } catch (error) {
+
+    console.error(
+      'Lecture generation error:',
+      error
+    );
+
+
+    state.lectureGenerating =
+      false;
+
+    state.lectureError =
+      error?.message ||
+      t('lectureError');
+
+    render();
+  }
+}
   }
 
   if (
@@ -3378,7 +3706,166 @@ function create() {
    RESULT
    ========================================================= */
 
+function formatLecture(text) {
+
+  const lines =
+    String(text || '')
+      .split(/\r?\n/);
+
+
+  return lines
+    .map(line => {
+
+      const clean =
+        line.trim();
+
+
+      if (!clean) {
+        return '<div style="height:10px"></div>';
+      }
+
+
+      const escaped =
+        escapeHtml(clean);
+
+
+      if (
+        escaped.startsWith('### ')
+      ) {
+
+        return `
+          <h4 style="margin-top:24px">
+            ${escaped.slice(4)}
+          </h4>
+        `;
+
+      }
+
+
+      if (
+        escaped.startsWith('## ')
+      ) {
+
+        return `
+          <h3 style="margin-top:28px">
+            ${escaped.slice(3)}
+          </h3>
+        `;
+
+      }
+
+
+      if (
+        escaped.startsWith('# ')
+      ) {
+
+        return `
+          <h2 style="margin-top:28px">
+            ${escaped.slice(2)}
+          </h2>
+        `;
+
+      }
+
+
+      const formatted =
+        escaped
+          .replace(
+            /\*\*(.*?)\*\*/g,
+            '<strong>$1</strong>'
+          );
+
+
+      return `
+        <p class="english">
+          ${formatted}
+        </p>
+      `;
+
+    })
+    .join('');
+}
+
+
 function result() {
+
+  if (
+    state.lectureGenerating
+  ) {
+
+    return layout(`
+
+      <div class="working">
+
+        <div class="dot"></div>
+
+        <h2 style="margin-top:20px">
+          ${t('lectureGenerating')}
+        </h2>
+
+        <div class="muted">
+          ${escapeHtml(
+            state.lectureTopic
+          )}
+        </div>
+
+      </div>
+
+    `);
+  }
+
+
+  if (
+    state.lectureError
+  ) {
+
+    return layout(`
+
+      <div class="top">
+
+        <button
+          class="back"
+          onclick="go('create')">
+          ‹
+        </button>
+
+        <div>
+
+          <strong>
+            ${t('aiLecture')}
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <div class="section card">
+
+        <h3>
+          ${t('lectureError')}
+        </h3>
+
+        <p class="muted">
+          ${escapeHtml(
+            state.lectureError
+          )}
+        </p>
+
+      </div>
+
+
+      <button
+        class="primary"
+        onclick="generate()">
+
+        ✦ ${t('createLecture')}
+
+      </button>
+
+    `);
+  }
+
 
   return layout(`
 
@@ -3390,18 +3877,18 @@ function result() {
         ‹
       </button>
 
-      <div>
+      <div style="flex:1">
 
         <strong>
-          ${t('generatedWork')}
+          ${t('aiLecture')}
         </strong>
 
         <div class="muted">
 
-          ${t('from')}
           ${state.sources.length}
-          ${t('sourcesCount')}
-          · English
+          ${t('selectedBooks')}
+          ·
+          ${state.lectureLength} min
 
         </div>
 
@@ -3410,38 +3897,35 @@ function result() {
     </div>
 
 
+    <div
+      class="eyebrow"
+      style="margin-top:10px">
+
+      ${t('generatedWork')}
+
+    </div>
+
+
     <h1>
-      Taste Before Rule:
-      How Rāgānugā Bhakti Begins
+      ${escapeHtml(
+        state.lectureTopic
+      )}
     </h1>
-
-
-    <p class="muted">
-      A draft composed from the selected library sources.
-    </p>
 
 
     <div class="section">
 
-      <p class="english">
-
-        The Gosvāmī literature is unusually precise about where spontaneous devotion starts. It starts with a taste that appears in the heart after hearing about the moods of the residents of Vraja.
-
-      </p>
-
-
-      <p class="english">
-
-        Viśvanātha Cakravartī makes the sequence explicit: hearing produces greed, greed produces eligibility, and practice then takes the shape of rāgānugā.
-
-      </p>
-
-
-      <p class="english">
-
-        Continue hearing and singing, keep the association of those in whom the taste is already awake, and let the perfected identity be a matter of meditation rather than announcement.
-
-      </p>
+      ${
+        state.generatedLecture
+          ? formatLecture(
+              state.generatedLecture
+            )
+          : `
+              <div class="muted">
+                ${t('lectureError')}
+              </div>
+            `
+      }
 
     </div>
 
@@ -3457,17 +3941,25 @@ function result() {
         style="margin-top:10px">
 
         ${
-          state.sources
+          state.lecturePassages
             .map(
-              (index, number) =>
-                `${number + 1}. ${
+              (passage, index) =>
+                `${index + 1}. ${
                   escapeHtml(
-                    BOOKS[index]?.short || ''
+                    passage.bookTitle || ''
                   )
                 } — ${
                   escapeHtml(
-                    BOOKS[index]?.author || ''
+                    passage.author || ''
                   )
+                }${
+                  passage.page
+                    ? ` · page ${
+                        escapeHtml(
+                          passage.page
+                        )
+                      }`
+                    : ''
                 }`
             )
             .join('<br>')
@@ -3480,15 +3972,9 @@ function result() {
 
     <button
       class="primary"
-      onclick="
-        toast(
-          '${escapeAttribute(
-            t('savedToWorks')
-          )}'
-        )
-      ">
+      onclick="go('create')">
 
-      ${t('saveWork')}
+      ← ${t('createLecture')}
 
     </button>
 
