@@ -41,6 +41,10 @@
     }
   ];
 
+  const DB_NAME = 'raganuga-pdf-search';
+  const DB_VERSION = 1;
+  const STORE_NAME = 'pages';
+
   function normalizeText(value) {
     return String(value || '')
       .normalize('NFD')
@@ -87,7 +91,108 @@
     return clean.slice(0, 350) + '…';
   }
 
-  const box = document.createElement('div');
+  function openDatabase() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(
+        DB_NAME,
+        DB_VERSION
+      );
+
+      request.onupgradeneeded = function () {
+        const db = request.result;
+
+        if (!db.objectStoreNames.contains(STORE_NAME)) {
+          db.createObjectStore(
+            STORE_NAME,
+            { keyPath: 'id' }
+          );
+        }
+      };
+
+      request.onsuccess = function () {
+        resolve(request.result);
+      };
+
+      request.onerror = function () {
+        reject(request.error);
+      };
+    });
+  }
+
+  function getAllPages(db) {
+    return new Promise((resolve, reject) => {
+      const transaction =
+        db.transaction(
+          STORE_NAME,
+          'readonly'
+        );
+
+      const store =
+        transaction.objectStore(STORE_NAME);
+
+      const request =
+        store.getAll();
+
+      request.onsuccess = function () {
+        resolve(request.result);
+      };
+
+      request.onerror = function () {
+        reject(request.error);
+      };
+    });
+  }
+
+  function savePage(db, pageData) {
+    return new Promise((resolve, reject) => {
+      const transaction =
+        db.transaction(
+          STORE_NAME,
+          'readwrite'
+        );
+
+      const store =
+        transaction.objectStore(STORE_NAME);
+
+      const request =
+        store.put(pageData);
+
+      request.onsuccess = function () {
+        resolve();
+      };
+
+      request.onerror = function () {
+        reject(request.error);
+      };
+    });
+  }
+
+  function clearDatabase(db) {
+    return new Promise((resolve, reject) => {
+      const transaction =
+        db.transaction(
+          STORE_NAME,
+          'readwrite'
+        );
+
+      const store =
+        transaction.objectStore(STORE_NAME);
+
+      const request =
+        store.clear();
+
+      request.onsuccess = function () {
+        resolve();
+      };
+
+      request.onerror = function () {
+        reject(request.error);
+      };
+    });
+  }
+
+  const box =
+    document.createElement('div');
 
   box.style.position = 'fixed';
   box.style.left = '20px';
@@ -105,89 +210,180 @@
   box.style.lineHeight = '1.5';
 
   box.innerHTML =
-    '<strong>ISKANJE PO VSEH KNJIGAH — pripravljam indeks ...</strong><br><br>' +
-    'Prosimo počakaj. Prebral bom vseh 9.916 strani.';
+    '<strong>PDF SEARCH — preverjam shranjeni indeks ...</strong>' +
+    '<br><br>' +
+    'Prosimo počakaj.';
 
   document.body.appendChild(box);
 
   try {
-    const index = [];
+    const db =
+      await openDatabase();
 
-    for (let bookIndex = 0; bookIndex < BOOKS.length; bookIndex++) {
-      const book = BOOKS[bookIndex];
+    let index =
+      await getAllPages(db);
+
+    /*
+     * Če indeks že obstaja, ga uporabimo.
+     */
+
+    if (index.length > 0) {
+      console.log(
+        'PDF SEARCH — uporabljen shranjeni indeks:',
+        index.length,
+        'strani'
+      );
 
       box.innerHTML =
-        '<strong>ISKANJE PO VSEH KNJIGAH — pripravljam indeks ...</strong>' +
+        '<strong>PDF SEARCH — shranjeni indeks najden ✅</strong>' +
         '<br><br>' +
-        '<strong>' +
-        escapeHtml(book.title) +
-        '</strong>' +
+        'Indeksiranih strani: ' +
+        index.length.toLocaleString() +
         '<br><br>' +
-        'Knjiga: ' +
-        (bookIndex + 1) +
-        ' / ' +
-        BOOKS.length +
-        '<br>' +
-        'Odpiram PDF ...';
-
-      const loadingTask = pdfjsLib.getDocument({
-        url: book.file,
-        enableScripting: false
-      });
-
-      const pdf = await loadingTask.promise;
-
-      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
-        const page = await pdf.getPage(pageNumber);
-        const content = await page.getTextContent();
-
-        const text = content.items
-          .map(item => item.str || '')
-          .join(' ')
-          .replace(/\s+/g, ' ')
-          .trim();
-
-        if (text) {
-          index.push({
-            bookIndex: bookIndex,
-            bookTitle: book.title,
-            file: book.file,
-            page: pageNumber,
-            text: text,
-            normalized: normalizeText(text)
-          });
-        }
-
-        if (
-          pageNumber === 1 ||
-          pageNumber % 100 === 0 ||
-          pageNumber === pdf.numPages
-        ) {
-          box.innerHTML =
-            '<strong>ISKANJE PO VSEH KNJIGAH — pripravljam indeks ...</strong>' +
-            '<br><br>' +
-            '<strong>' +
-            escapeHtml(book.title) +
-            '</strong>' +
-            '<br><br>' +
-            'Knjiga: ' +
-            (bookIndex + 1) +
-            ' / ' +
-            BOOKS.length +
-            '<br>' +
-            'Stran: ' +
-            pageNumber +
-            ' / ' +
-            pdf.numPages +
-            '<br>' +
-            'Indeksiranih strani: ' +
-            index.length.toLocaleString();
-        }
-      }
+        'Iskanje je pripravljeno.';
     }
 
-    console.log('ISKANJE — indeks pripravljen');
-    console.log('Indeksiranih strani:', index.length);
+    /*
+     * Če indeksa še ni, ga ustvarimo.
+     */
+
+    if (index.length === 0) {
+      box.innerHTML =
+        '<strong>PDF SEARCH — pripravljam indeks prvič ...</strong>' +
+        '<br><br>' +
+        'To bo trajalo nekaj časa, ker prebiram vseh 8 knjig.';
+    }
+
+    if (index.length === 0) {
+      for (
+        let bookIndex = 0;
+        bookIndex < BOOKS.length;
+        bookIndex++
+      ) {
+        const book =
+          BOOKS[bookIndex];
+
+        box.innerHTML =
+          '<strong>PDF SEARCH — pripravljam indeks ...</strong>' +
+          '<br><br>' +
+          '<strong>' +
+          escapeHtml(book.title) +
+          '</strong>' +
+          '<br><br>' +
+          'Knjiga: ' +
+          (bookIndex + 1) +
+          ' / ' +
+          BOOKS.length;
+
+        const loadingTask =
+          pdfjsLib.getDocument({
+            url: book.file,
+            enableScripting: false
+          });
+
+        const pdf =
+          await loadingTask.promise;
+
+        for (
+          let pageNumber = 1;
+          pageNumber <= pdf.numPages;
+          pageNumber++
+        ) {
+          const page =
+            await pdf.getPage(
+              pageNumber
+            );
+
+          const content =
+            await page.getTextContent();
+
+          const text =
+            content.items
+              .map(item => item.str || '')
+              .join(' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+
+          if (text) {
+            const pageData = {
+              id:
+                bookIndex +
+                '-' +
+                pageNumber,
+
+              bookIndex:
+                bookIndex,
+
+              bookTitle:
+                book.title,
+
+              file:
+                book.file,
+
+              page:
+                pageNumber,
+
+              text:
+                text,
+
+              normalized:
+                normalizeText(text)
+            };
+
+            index.push(pageData);
+
+            await savePage(
+              db,
+              pageData
+            );
+          }
+
+          if (
+            pageNumber === 1 ||
+            pageNumber % 100 === 0 ||
+            pageNumber === pdf.numPages
+          ) {
+            box.innerHTML =
+              '<strong>PDF SEARCH — pripravljam indeks ...</strong>' +
+              '<br><br>' +
+              '<strong>' +
+              escapeHtml(book.title) +
+              '</strong>' +
+              '<br><br>' +
+              'Knjiga: ' +
+              (bookIndex + 1) +
+              ' / ' +
+              BOOKS.length +
+              '<br>' +
+              'Stran: ' +
+              pageNumber +
+              ' / ' +
+              pdf.numPages +
+              '<br>' +
+              'Shranjene strani: ' +
+              index.length.toLocaleString();
+          }
+        }
+      }
+
+      console.log(
+        'PDF SEARCH — indeks shranjen:',
+        index.length,
+        'strani'
+      );
+
+      box.innerHTML =
+        '<strong>PDF SEARCH — INDEKS SHRANJEN ✅</strong>' +
+        '<br><br>' +
+        'Indeksiranih strani: ' +
+        index.length.toLocaleString() +
+        '<br><br>' +
+        'Od zdaj naprej se bo indeks lahko ponovno uporabil.';
+    }
+
+    /*
+     * Iskalni uporabniški vmesnik.
+     */
 
     box.innerHTML = `
       <strong>ISKANJE PO VSEH KNJIGAH — PRIPRAVLJENO ✅</strong>
@@ -200,7 +396,7 @@
         border-radius:8px;
         margin-bottom:18px;
       ">
-        Indeksiranih strani:
+        Shranjenih indeksiranih strani:
         <strong>${index.length.toLocaleString()}</strong>
       </div>
 
@@ -225,6 +421,7 @@
 
         <button
           id="library-search-button"
+          type="button"
           style="
             padding:12px 18px;
             font-size:16px;
@@ -246,20 +443,31 @@
     `;
 
     const input =
-      document.getElementById('library-search-input');
+      document.getElementById(
+        'library-search-input'
+      );
 
     const button =
-      document.getElementById('library-search-button');
+      document.getElementById(
+        'library-search-button'
+      );
 
     const status =
-      document.getElementById('library-search-status');
+      document.getElementById(
+        'library-search-status'
+      );
 
     const resultsBox =
-      document.getElementById('library-search-results');
+      document.getElementById(
+        'library-search-results'
+      );
 
     function search() {
-      const query = input.value.trim();
-      const normalizedQuery = normalizeText(query);
+      const query =
+        input.value.trim();
+
+      const normalizedQuery =
+        normalizeText(query);
 
       resultsBox.innerHTML = '';
 
@@ -267,22 +475,32 @@
         status.textContent =
           'Vpiši iskalni izraz.';
 
+        input.focus();
+
         return;
       }
 
-      const results = index.filter(item =>
-        item.normalized.includes(normalizedQuery)
-      );
+      const results =
+        index.filter(item =>
+          item.normalized.includes(
+            normalizedQuery
+          )
+        );
 
       status.textContent =
         'Najdenih strani: ' +
-        results.length.toLocaleString();
+        results.length.toLocaleString() +
+        ' za »' +
+        query +
+        '«';
 
       if (!results.length) {
         resultsBox.innerHTML =
           '<p>Ni zadetkov za <strong>' +
           escapeHtml(query) +
           '</strong>.</p>';
+
+        input.focus();
 
         return;
       }
@@ -293,7 +511,9 @@
           const row =
             document.createElement('div');
 
-          row.style.padding = '16px 0';
+          row.style.padding =
+            '16px 0';
+
           row.style.borderBottom =
             '1px solid #ddd';
 
@@ -308,7 +528,9 @@
           const snippet =
             document.createElement('div');
 
-          snippet.style.marginTop = '7px';
+          snippet.style.marginTop =
+            '7px';
+
           snippet.textContent =
             makeSnippet(
               result.text,
@@ -316,15 +538,23 @@
             );
 
           const openButton =
-            document.createElement('button');
+            document.createElement(
+              'button'
+            );
+
+          openButton.type =
+            'button';
 
           openButton.textContent =
             'Odpri stran ' +
             result.page;
 
-          openButton.style.marginTop = '10px';
+          openButton.style.marginTop =
+            '10px';
+
           openButton.style.padding =
             '8px 12px';
+
           openButton.style.cursor =
             'pointer';
 
@@ -351,7 +581,8 @@
         const more =
           document.createElement('p');
 
-        more.style.marginTop = '16px';
+        more.style.marginTop =
+          '16px';
 
         more.textContent =
           'Prikazanih je prvih 100 zadetkov od ' +
@@ -360,17 +591,24 @@
 
         resultsBox.appendChild(more);
       }
+
+      input.focus();
+      input.select();
     }
 
     button.addEventListener(
       'click',
-      search
+      function (event) {
+        event.preventDefault();
+        search();
+      }
     );
 
     input.addEventListener(
       'keydown',
       function (event) {
         if (event.key === 'Enter') {
+          event.preventDefault();
           search();
         }
       }
@@ -380,13 +618,15 @@
 
   } catch (error) {
     console.error(
-      'ISKANJE PO VSEH KNJIGAH — NAPAKA ❌',
+      'PDF SEARCH — NAPAKA ❌',
       error
     );
 
     box.innerHTML =
-      '<strong>ISKANJE PO VSEH KNJIGAH — NAPAKA ❌</strong>' +
+      '<strong>PDF SEARCH — NAPAKA ❌</strong>' +
       '<br><br>' +
-      escapeHtml(String(error));
+      escapeHtml(
+        String(error)
+      );
   }
 })();
