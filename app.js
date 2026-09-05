@@ -1,5 +1,5 @@
 const BOOKS = [
-    {
+  {
     id: 'bhakti-rasamrita-sindhu',
     short: 'Bhakti-rasāmṛta-sindhu',
     author: 'Rūpa Gosvāmī',
@@ -199,7 +199,20 @@ const I18N = {
     rebuildingSearch: 'Building the library index…',
     pdfPage: 'PDF · page',
     openPage: 'Open page',
-    indexedPages: 'Indexed pages'
+    indexedPages: 'Indexed pages',
+
+    aiLecture: 'AI Lecture',
+    chooseBooks: 'Choose books',
+    selectedBooks: 'selected',
+    lectureTopic: 'Lecture topic',
+    lectureTopicPlaceholder: 'What should the lecture explain?',
+    lectureLength: 'Lecture length',
+    minutes10: '10 min',
+    minutes20: '20 min',
+    minutes40: '40 min',
+    lectureLanguage: 'Lecture language',
+    createLecture: 'Create lecture',
+    aiNotConnected: 'AI generation will be connected next.'
   },
 
   sl: {
@@ -278,7 +291,20 @@ const I18N = {
     rebuildingSearch: 'Gradim indeks knjižnice…',
     pdfPage: 'PDF · stran',
     openPage: 'Odpri stran',
-    indexedPages: 'Indeksirane strani'
+    indexedPages: 'Indeksirane strani',
+
+    aiLecture: 'AI predavanje',
+    chooseBooks: 'Izberi knjige',
+    selectedBooks: 'izbranih',
+    lectureTopic: 'Tema predavanja',
+    lectureTopicPlaceholder: 'Kaj naj predavanje razloži?',
+    lectureLength: 'Dolžina predavanja',
+    minutes10: '10 min',
+    minutes20: '20 min',
+    minutes40: '40 min',
+    lectureLanguage: 'Jezik predavanja',
+    createLecture: 'Ustvari predavanje',
+    aiNotConnected: 'AI generiranje bomo povezali v naslednjem koraku.'
   }
 };
 
@@ -302,7 +328,10 @@ let state = {
   bookmarks: [],
   searchIndex: [],
   searchReady: false,
-  searchLoading: false
+  searchLoading: false,
+
+  lectureTopic: '',
+  lectureLength: '20'
 };
 
 
@@ -324,6 +353,14 @@ if (!Array.isArray(state.bookmarks)) {
 
 if (!Array.isArray(state.sources)) {
   state.sources = [0, 1, 2, 3];
+}
+
+if (!state.lectureLength) {
+  state.lectureLength = '20';
+}
+
+if (typeof state.lectureTopic !== 'string') {
+  state.lectureTopic = '';
 }
 
 
@@ -350,7 +387,9 @@ function save() {
       loadedBook: state.loadedBook,
       loadedBookId: state.loadedBookId,
       chapter: state.chapter,
-      bookmarks: state.bookmarks
+      bookmarks: state.bookmarks,
+      lectureTopic: state.lectureTopic,
+      lectureLength: state.lectureLength
     };
 
     localStorage.setItem(
@@ -398,20 +437,11 @@ function setLanguage(lang) {
 
 function go(screen) {
 
-  /*
-    IMPORTANT:
-    If the user leaves Search, cancel any pending
-    request that would put the focus back into
-    the Search field.
-  */
-
-  if (typeof searchFocusFrame !== 'undefined' &&
-      searchFocusFrame !== null) {
-
-    cancelAnimationFrame(
-      searchFocusFrame
-    );
-
+  if (
+    typeof searchFocusFrame !== 'undefined' &&
+    searchFocusFrame !== null
+  ) {
+    cancelAnimationFrame(searchFocusFrame);
     searchFocusFrame = null;
   }
 
@@ -527,8 +557,6 @@ function library() {
     <h1>
       Rāgānugā Bhakti
     </h1>
-
-    
 
 
     <div class="section">
@@ -1556,11 +1584,6 @@ const SEARCH_STORE_NAME = 'pages';
 
 let pdfjsPromise = null;
 
-
-/*
-  Used only to keep the Search input focused while
-  typing. Navigation cancels this frame.
-*/
 let searchFocusFrame = null;
 
 
@@ -2112,10 +2135,6 @@ async function buildSearchIndex() {
 
   try {
 
-    /*
-      First load the small structured sample book.
-    */
-
     let sampleResults = [];
 
     try {
@@ -2289,10 +2308,6 @@ async function buildSearchIndex() {
     }
 
 
-    /*
-      Try to use the saved PDF index first.
-    */
-
     let cachedRows = [];
 
     try {
@@ -2321,11 +2336,6 @@ async function buildSearchIndex() {
           row.pdf
       );
 
-
-    /*
-      The current cache is valid only when it
-      contains data for all eight PDF parts.
-    */
 
     const cachedPdfIds =
       new Set(
@@ -2374,11 +2384,6 @@ async function buildSearchIndex() {
       );
 
     } else {
-
-      /*
-        The cache is incomplete or belongs
-        to an older version. Rebuild it.
-      */
 
       try {
         await clearSearchDatabase();
@@ -2465,10 +2470,6 @@ function setSearchQuery(value) {
 
   render();
 
-  /*
-    Cancel any older focus request first.
-  */
-
   if (
     searchFocusFrame !== null
   ) {
@@ -2481,21 +2482,10 @@ function setSearchQuery(value) {
   }
 
 
-  /*
-    Restore focus only after the Search
-    screen has finished rendering.
-  */
-
   searchFocusFrame =
     requestAnimationFrame(() => {
 
       searchFocusFrame = null;
-
-      /*
-        IMPORTANT:
-        Only restore focus if we are still
-        actually on the Search screen.
-      */
 
       if (
         state.screen !== 'search'
@@ -2921,11 +2911,6 @@ function openSearchResult(index) {
   }
 
 
-  /*
-    PDF result:
-    open the exact PDF page.
-  */
-
   if (
     result.pdf
   ) {
@@ -2943,10 +2928,6 @@ function openSearchResult(index) {
     return;
   }
 
-
-  /*
-    Structured sample-book result.
-  */
 
   state.book = 0;
 
@@ -3049,84 +3030,91 @@ function scrollToVerse(ref) {
 
 
 /* =========================================================
-   CREATE
+   AI LECTURE INTERFACE
    ========================================================= */
+
+function toggleLectureSource(index) {
+
+  if (
+    state.sources.includes(index)
+  ) {
+
+    state.sources =
+      state.sources.filter(
+        item =>
+          item !== index
+      );
+
+  } else {
+
+    state.sources = [
+      ...state.sources,
+      index
+    ];
+  }
+
+  save();
+  render();
+}
+
+
+function setLectureTopic(value) {
+
+  state.lectureTopic =
+    value;
+
+  save();
+}
+
+
+function setLectureLength(value) {
+
+  state.lectureLength =
+    value;
+
+  save();
+  render();
+}
+
+
+function generate() {
+
+  if (
+    !state.sources.length
+  ) {
+
+    toast(
+      state.lang === 'sl'
+        ? 'Najprej izberi vsaj eno knjigo.'
+        : 'Please select at least one book.'
+    );
+
+    return;
+  }
+
+  if (
+    !state.lectureTopic.trim()
+  ) {
+
+    toast(
+      state.lang === 'sl'
+        ? 'Najprej vpiši temo predavanja.'
+        : 'Please enter a lecture topic.'
+    );
+
+    return;
+  }
+
+  toast(
+    t('aiNotConnected')
+  );
+}
+
 
 function create() {
 
-  if (state.working) {
-
-    return layout(`
-
-      <div class="working">
-
-        <div class="dot"></div>
-
-        <h2 style="margin-top:20px">
-          ${t('generateWork')}…
-        </h2>
-
-        <div class="muted">
-
-          ${
-            [
-              t('readingSelected'),
-              t('gathering'),
-              t('composing'),
-              t('assembling')
-            ][state.step]
-          }
-
-        </div>
-
-      </div>
-
-    `);
-  }
-
-
-  const formTranslations = {
-
-    'Article':
-      state.lang === 'sl'
-        ? 'Članek'
-        : 'Article',
-
-    'New book':
-      state.lang === 'sl'
-        ? 'Nova knjiga'
-        : 'New book',
-
-    'Poetic recitation':
-      state.lang === 'sl'
-        ? 'Pesniška recitacija'
-        : 'Poetic recitation',
-
-    'Song lyrics':
-      state.lang === 'sl'
-        ? 'Besedilo pesmi'
-        : 'Song lyrics',
-
-    'Study notes':
-      state.lang === 'sl'
-        ? 'Študijski zapiski'
-        : 'Study notes',
-
-    'Daily reflection':
-      state.lang === 'sl'
-        ? 'Dnevni razmislek'
-        : 'Daily reflection',
-
-    'Q&A':
-      state.lang === 'sl'
-        ? 'Vprašanja in odgovori'
-        : 'Q&A',
-
-    'Class outline':
-      state.lang === 'sl'
-        ? 'Oris predavanja'
-        : 'Class outline'
-  };
+  const selectedCount =
+    state.sources.length;
 
 
   return layout(`
@@ -3136,42 +3124,110 @@ function create() {
     </div>
 
     <h1>
-      ${t('generateWork')}
+      ${t('aiLecture')}
     </h1>
 
 
     <div class="section card">
 
-      <h3>
-        ${t('form')}
-      </h3>
+      <div
+        style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          gap:12px;
+          margin-bottom:14px
+        ">
+
+        <h3 style="margin:0">
+          ${t('chooseBooks')}
+        </h3>
+
+        <span class="muted">
+          ${selectedCount} ${t('selectedBooks')}
+        </span>
+
+      </div>
+
 
       <div
-        class="formgrid"
-        style="margin-top:10px">
+        style="
+          display:grid;
+          gap:10px
+        ">
 
-        ${FORMS.map(form => `
+        ${BOOKS.map(
+          (book, index) => {
 
-          <button
-            class="select ${
-              state.form === form
-                ? 'on'
-                : ''
-            }"
-            onclick="
-              state.form=
-                '${escapeAttribute(
-                  form
-                )}';
-              save();
-              render();
-            ">
+            const selected =
+              state.sources.includes(
+                index
+              );
 
-            ${formTranslations[form]}
+            return `
 
-          </button>
+              <button
+                class="select ${selected ? 'on' : ''}"
+                style="
+                  text-align:left;
+                  padding:15px;
+                  display:flex;
+                  align-items:center;
+                  justify-content:space-between;
+                  gap:12px
+                "
+                onclick="
+                  toggleLectureSource(
+                    ${index}
+                  )
+                ">
 
-        `).join('')}
+                <span
+                  style="
+                    display:block;
+                    min-width:0
+                  ">
+
+                  <strong>
+                    ${escapeHtml(
+                      book.short
+                    )}
+                  </strong>
+
+                  <span
+                    class="muted"
+                    style="
+                      display:block;
+                      margin-top:4px
+                    ">
+
+                    ${escapeHtml(
+                      book.author
+                    )}
+
+                  </span>
+
+                </span>
+
+                <span
+                  style="
+                    font-size:20px;
+                    flex:0 0 auto
+                  ">
+
+                  ${
+                    selected
+                      ? '✓'
+                      : '○'
+                  }
+
+                </span>
+
+              </button>
+
+            `;
+          }
+        ).join('')}
 
       </div>
 
@@ -3181,59 +3237,25 @@ function create() {
     <div class="card">
 
       <h3>
-        ${t('sources')}
+        ${t('lectureTopic')}
       </h3>
 
-      ${state.sources
-        .map(index => {
-
-          const book =
-            BOOKS[index];
-
-          if (!book) {
-            return '';
-          }
-
-          return `
-
-            <div class="source">
-
-              <span>
-                ${escapeHtml(
-                  book.short
-                )}
-              </span>
-
-              <button
-                class="remove"
-                onclick="
-                  state.sources=
-                    state.sources.filter(
-                      x=>x!==${index}
-                    );
-                  save();
-                  render();
-                ">
-
-                ${t('remove')}
-
-              </button>
-
-            </div>
-
-          `;
-        })
-        .join('')}
-
-
-      <button
-        class="chip on"
-        style="margin-top:10px"
-        onclick="go('search')">
-
-        + ${t('findSources')}
-
-      </button>
+      <textarea
+        class="textarea"
+        style="
+          margin-top:10px;
+          min-height:130px
+        "
+        oninput="
+          setLectureTopic(
+            this.value
+          )
+        "
+        placeholder="${t(
+          'lectureTopicPlaceholder'
+        )}">${escapeHtml(
+          state.lectureTopic
+        )}</textarea>
 
     </div>
 
@@ -3241,18 +3263,83 @@ function create() {
     <div class="card">
 
       <h3>
-        ${t('intent')}
+        ${t('lectureLength')}
       </h3>
 
-      <textarea
-        class="textarea"
-        style="margin-top:10px"
-        oninput="
-          state.intent=this.value;
-          save();
-        ">${escapeHtml(
-          state.intent
-        )}</textarea>
+      <div
+        class="formgrid"
+        style="margin-top:10px">
+
+        ${[
+          ['10', t('minutes10')],
+          ['20', t('minutes20')],
+          ['40', t('minutes40')]
+        ].map(
+          ([value, label]) => `
+
+            <button
+              class="select ${
+                state.lectureLength === value
+                  ? 'on'
+                  : ''
+              }"
+              onclick="
+                setLectureLength(
+                  '${value}'
+                )
+              ">
+
+              ${label}
+
+            </button>
+
+          `
+        ).join('')}
+
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <h3>
+        ${t('lectureLanguage')}
+      </h3>
+
+      <div
+        class="chips"
+        style="margin-top:10px">
+
+        <button
+          class="chip ${
+            state.lang === 'sl'
+              ? 'on'
+              : ''
+          }"
+          onclick="
+            setLanguage('sl')
+          ">
+
+          🇸🇮 Slovenščina
+
+        </button>
+
+        <button
+          class="chip ${
+            state.lang === 'en'
+              ? 'on'
+              : ''
+          }"
+          onclick="
+            setLanguage('en')
+          ">
+
+          🇬🇧 English
+
+        </button>
+
+      </div>
 
     </div>
 
@@ -3261,42 +3348,23 @@ function create() {
       class="primary"
       onclick="generate()">
 
-      ${t('generate')}
-      ${formTranslations[state.form]}
+      ✦ ${t('createLecture')}
 
     </button>
 
+
+    <div
+      class="muted"
+      style="
+        text-align:center;
+        margin-top:12px
+      ">
+
+      ${selectedCount} ${t('selectedBooks')}
+
+    </div>
+
   `);
-}
-
-
-function generate() {
-
-  state.working = true;
-  state.step = 0;
-
-  render();
-
-  const timer =
-    setInterval(() => {
-
-      state.step++;
-
-      if (state.step >= 4) {
-
-        clearInterval(timer);
-
-        state.working = false;
-
-        go('result');
-
-      } else {
-
-        render();
-
-      }
-
-    }, 650);
 }
 
 
@@ -3893,6 +3961,15 @@ window.openSearchResult =
 
 window.generate =
   generate;
+
+window.toggleLectureSource =
+  toggleLectureSource;
+
+window.setLectureTopic =
+  setLectureTopic;
+
+window.setLectureLength =
+  setLectureLength;
 
 window.save =
   save;
