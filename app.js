@@ -3978,7 +3978,6 @@ function downloadSavedWork(index) {
   const work =
     state.works[index];
 
-
   if (!work) {
     return;
   }
@@ -4010,6 +4009,14 @@ function downloadSavedWork(index) {
     .trim();
 
 
+  const prompt =
+    String(
+      work.prompt ||
+      ''
+    )
+    .trim();
+
+
   const content =
     String(
       work.content ||
@@ -4018,13 +4025,210 @@ function downloadSavedWork(index) {
     .trim();
 
 
+  /*
+   * AI včasih vrne HTML entitete,
+   * npr. &#x20; namesto presledka.
+   * Tukaj jih najprej pretvorimo
+   * nazaj v prave znake.
+   */
+
+  function decodeHtmlEntities(value) {
+
+    const textarea =
+      document.createElement(
+        'textarea'
+      );
+
+    textarea.innerHTML =
+      String(
+        value ?? ''
+      );
+
+    return textarea.value;
+
+  }
+
+
+  function escapeHtml(value) {
+
+    return String(
+      value ?? ''
+    )
+      .replace(
+        /&/g,
+        '&amp;'
+      )
+      .replace(
+        /</g,
+        '&lt;'
+      )
+      .replace(
+        />/g,
+        '&gt;'
+      )
+      .replace(
+        /"/g,
+        '&quot;'
+      )
+      .replace(
+        /'/g,
+        '&#039;'
+      );
+
+  }
+
+
+  function markdownToHtml(text) {
+
+    const decoded =
+      decodeHtmlEntities(
+        text
+      );
+
+
+    let html =
+      escapeHtml(
+        decoded
+      );
+
+
+    /*
+     * Markdown headings
+     */
+
+    html =
+      html.replace(
+        /^### (.*)$/gm,
+        '<h3>$1</h3>'
+      );
+
+
+    html =
+      html.replace(
+        /^## (.*)$/gm,
+        '<h2>$1</h2>'
+      );
+
+
+    html =
+      html.replace(
+        /^# (.*)$/gm,
+        '<h1>$1</h1>'
+      );
+
+
+    /*
+     * Bold
+     */
+
+    html =
+      html.replace(
+        /\*\*(.*?)\*\*/g,
+        '<strong>$1</strong>'
+      );
+
+
+    /*
+     * Italic
+     */
+
+    html =
+      html.replace(
+        /(?<!\*)\*(?!\s)(.*?)(?<!\s)\*(?!\*)/g,
+        '<em>$1</em>'
+      );
+
+
+    /*
+     * Horizontal line
+     */
+
+    html =
+      html.replace(
+        /^---$/gm,
+        '<hr>'
+      );
+
+
+    /*
+     * Odstavki
+     */
+
+    const blocks =
+      html
+        .split(
+          /\n\s*\n/
+        )
+        .map(
+          block =>
+            block.trim()
+        )
+        .filter(
+          block =>
+            block
+        );
+
+
+    return blocks
+      .map(
+        block => {
+
+          if (
+            block.startsWith('<h1>')
+            ||
+            block.startsWith('<h2>')
+            ||
+            block.startsWith('<h3>')
+            ||
+            block === '<hr>'
+          ) {
+
+            return block;
+
+          }
+
+
+          return (
+            '<p>' +
+            block
+              .replace(
+                /\n/g,
+                '<br>'
+              ) +
+            '</p>'
+          );
+
+        }
+      )
+      .join('\n');
+
+  }
+
+
+  const contentHtml =
+    markdownToHtml(
+      content
+    );
+
+
+  const promptHtml =
+    prompt
+      ? markdownToHtml(
+          prompt
+        )
+      : '';
+
+
   const sourceList =
     Array.isArray(
       work.passages
     )
       ? work.passages
           .map(
-            (passage, sourceIndex) => {
+            (
+              passage,
+              sourceIndex
+            ) => {
 
               const book =
                 passage.bookTitle ||
@@ -4036,18 +4240,25 @@ function downloadSavedWork(index) {
 
               const page =
                 passage.page
-                  ? ` · ${
+                  ? (
                       state.lang === 'sl'
-                        ? 'stran'
-                        : 'page'
-                    } ${passage.page}`
+                        ? ` · stran ${passage.page}`
+                        : ` · page ${passage.page}`
+                    )
                   : '';
 
-              return (
-                `${sourceIndex + 1}. ` +
-                `${book} — ${author}` +
-                `${page}`
-              );
+
+              return `
+                <li>
+                  ${escapeHtml(book)}
+                  ${
+                    author
+                      ? ` — ${escapeHtml(author)}`
+                      : ''
+                  }
+                  ${page}
+                </li>
+              `;
 
             }
           )
@@ -4055,64 +4266,508 @@ function downloadSavedWork(index) {
       : '';
 
 
-  const text = [
-
-    title,
-
-    '',
-
-    typeLabel,
-
-    '',
-
+  const languageCode =
     state.lang === 'sl'
-      ? 'Navodilo:'
-      : 'Prompt:',
+      ? 'sl'
+      : 'en';
 
-    work.prompt || '',
 
-    '',
-
-    '========================================',
-
-    '',
-
-    content,
-
-    '',
-
-    '========================================',
-
-    '',
-
+  const promptLabel =
     state.lang === 'sl'
-      ? 'VIRI'
-      : 'SOURCES',
+      ? 'Navodilo'
+      : 'Prompt';
 
-    '',
 
-    sourceList ||
-      (
-        state.lang === 'sl'
-          ? 'Viri niso navedeni.'
-          : 'No sources listed.'
-      ),
-
-    '',
-
+  const sourcesLabel =
     state.lang === 'sl'
-      ? `Ustvarjeno: ${formatWorkDate(work.createdAt)}`
-      : `Created: ${formatWorkDate(work.createdAt)}`
+      ? 'Viri'
+      : 'Sources';
 
-  ].join('\n');
+
+  const createdLabel =
+    state.lang === 'sl'
+      ? 'Ustvarjeno'
+      : 'Created';
+
+
+  const durationLabel =
+    state.lang === 'sl'
+      ? 'Trajanje'
+      : 'Duration';
+
+
+  const noSources =
+    state.lang === 'sl'
+      ? 'Viri niso navedeni.'
+      : 'No sources listed.';
+
+
+  const htmlDocument = `
+<!doctype html>
+
+<html lang="${languageCode}">
+
+<head>
+
+<meta charset="utf-8">
+
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1"
+>
+
+<meta
+  name="format-detection"
+  content="telephone=no"
+>
+
+<title>
+  ${escapeHtml(title)}
+</title>
+
+
+<link
+  rel="preconnect"
+  href="https://fonts.googleapis.com"
+>
+
+<link
+  rel="preconnect"
+  href="https://fonts.gstatic.com"
+  crossorigin
+>
+
+<link
+  href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Noto+Serif:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap"
+  rel="stylesheet"
+>
+
+
+<style>
+
+  * {
+    box-sizing: border-box;
+  }
+
+
+  body {
+
+    margin: 0;
+
+    padding: 40px 20px;
+
+    background:
+      #f5f2eb;
+
+    color:
+      #2d2924;
+
+    font-family:
+      "Noto Sans",
+      "Noto Sans Devanagari",
+      "Noto Sans Bengali",
+      sans-serif;
+
+    line-height:
+      1.78;
+
+    font-size:
+      16px;
+
+  }
+
+
+  .page {
+
+    width:
+      min(
+        920px,
+        100%
+      );
+
+    margin:
+      0 auto;
+
+    background:
+      #ffffff;
+
+    padding:
+      52px 58px;
+
+    border-radius:
+      18px;
+
+    box-shadow:
+      0 12px 40px
+      rgba(
+        0,
+        0,
+        0,
+        0.08
+      );
+
+  }
+
+
+  h1 {
+
+    margin:
+      0 0 12px;
+
+    font-family:
+      "Noto Serif",
+      "Noto Serif Devanagari",
+      serif;
+
+    font-size:
+      2.15rem;
+
+    line-height:
+      1.3;
+
+    font-weight:
+      700;
+
+  }
+
+
+  h2 {
+
+    margin:
+      36px 0 14px;
+
+    font-family:
+      "Noto Serif",
+      "Noto Serif Devanagari",
+      serif;
+
+    font-size:
+      1.55rem;
+
+    line-height:
+      1.4;
+
+  }
+
+
+  h3 {
+
+    margin:
+      28px 0 12px;
+
+    font-family:
+      "Noto Serif",
+      "Noto Serif Devanagari",
+      serif;
+
+    font-size:
+      1.2rem;
+
+    line-height:
+      1.45;
+
+  }
+
+
+  p {
+
+    margin:
+      0 0 18px;
+
+  }
+
+
+  strong {
+
+    font-weight:
+      700;
+
+  }
+
+
+  em {
+
+    font-style:
+      italic;
+
+  }
+
+
+  hr {
+
+    margin:
+      32px 0;
+
+    border:
+      0;
+
+    border-top:
+      1px solid
+      #ddd6ca;
+
+  }
+
+
+  .meta {
+
+    margin:
+      8px 0;
+
+  }
+
+
+  .meta strong {
+
+    margin-right:
+      6px;
+
+  }
+
+
+  .sources {
+
+    margin-top:
+      44px;
+
+    padding-top:
+      26px;
+
+    border-top:
+      1px solid
+      #ddd6ca;
+
+  }
+
+
+  .sources h2 {
+
+    margin-top:
+      0;
+
+  }
+
+
+  .sources ul {
+
+    margin:
+      0;
+
+    padding-left:
+      26px;
+
+  }
+
+
+  .sources li {
+
+    margin-bottom:
+      8px;
+
+  }
+
+
+  @media (
+    max-width: 700px
+  ) {
+
+    body {
+
+      padding:
+        0;
+
+      background:
+        #ffffff;
+
+    }
+
+
+    .page {
+
+      width:
+        100%;
+
+      padding:
+        28px 20px;
+
+      border-radius:
+        0;
+
+      box-shadow:
+        none;
+
+    }
+
+
+    h1 {
+
+      font-size:
+        1.65rem;
+
+    }
+
+
+    h2 {
+
+      font-size:
+        1.35rem;
+
+    }
+
+
+    h3 {
+
+      font-size:
+        1.1rem;
+
+    }
+
+  }
+
+</style>
+
+</head>
+
+
+<body>
+
+<main class="page">
+
+
+  <h1>
+    ${escapeHtml(title)}
+  </h1>
+
+
+  <div class="meta">
+
+    <strong>
+      ${escapeHtml(typeLabel)}
+    </strong>
+
+  </div>
+
+
+  ${
+    work.length
+      ? `
+        <div class="meta">
+
+          <strong>
+            ${escapeHtml(durationLabel)}:
+          </strong>
+
+          ${escapeHtml(
+            work.length
+          )}
+
+          ${
+            state.lang === 'sl'
+              ? ' minut'
+              : ' minutes'
+          }
+
+        </div>
+      `
+      : ''
+  }
+
+
+  ${
+    prompt
+      ? `
+
+        <div
+          class="meta"
+          style="margin-top:20px">
+
+          <strong>
+            ${escapeHtml(promptLabel)}:
+          </strong>
+
+        </div>
+
+
+        <div>
+
+          ${promptHtml}
+
+        </div>
+
+      `
+      : ''
+  }
+
+
+  <hr>
+
+
+  <article>
+
+    ${contentHtml}
+
+  </article>
+
+
+  <section class="sources">
+
+    <h2>
+      ${escapeHtml(sourcesLabel)}
+    </h2>
+
+
+    ${
+      sourceList
+        ? `
+          <ul>
+            ${sourceList}
+          </ul>
+        `
+        : `
+          <p>
+            ${escapeHtml(
+              noSources
+            )}
+          </p>
+        `
+    }
+
+  </section>
+
+
+  <div
+    class="meta"
+    style="margin-top:30px"
+  >
+
+    <strong>
+      ${escapeHtml(createdLabel)}:
+    </strong>
+
+    ${escapeHtml(
+      formatWorkDate(
+        work.createdAt
+      )
+    )}
+
+  </div>
+
+
+</main>
+
+</body>
+
+</html>
+  `.trim();
 
 
   const blob =
     new Blob(
-      [text],
+      [
+        htmlDocument
+      ],
       {
         type:
-          'text/plain;charset=utf-8'
+          'text/html;charset=utf-8'
       }
     );
 
@@ -4153,7 +4808,7 @@ function downloadSavedWork(index) {
 
   link.download =
     safeName +
-    '.txt';
+    '.html';
 
 
   document.body.appendChild(
@@ -4184,6 +4839,7 @@ function downloadSavedWork(index) {
       ? 'Delo je preneseno.'
       : 'Work downloaded.'
   );
+
 }
 
 
