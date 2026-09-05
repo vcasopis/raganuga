@@ -335,7 +335,11 @@ let state = {
   searchLoading: false,
 
   lectureTopic: '',
-  lectureLength: '20'
+  lectureLength: '20',
+  lectureGenerating: false,
+  generatedLecture: '',
+  lectureError: '',
+  lecturePassages: []
 };
 
 
@@ -367,6 +371,22 @@ if (typeof state.lectureTopic !== 'string') {
   state.lectureTopic = '';
 }
 
+if (typeof state.lectureGenerating !== 'boolean') {
+  state.lectureGenerating = false;
+}
+
+if (typeof state.generatedLecture !== 'string') {
+  state.generatedLecture = '';
+}
+
+if (typeof state.lectureError !== 'string') {
+  state.lectureError = '';
+}
+
+if (!Array.isArray(state.lecturePassages)) {
+  state.lecturePassages = [];
+}
+
 
 function t(key) {
   return I18N[state.lang]?.[key] || I18N.en[key] || key;
@@ -393,7 +413,10 @@ function save() {
       chapter: state.chapter,
       bookmarks: state.bookmarks,
       lectureTopic: state.lectureTopic,
-      lectureLength: state.lectureLength
+      lectureLength: state.lectureLength,
+      generatedLecture: state.generatedLecture,
+      lectureError: state.lectureError,
+      lecturePassages: state.lecturePassages
     };
 
     localStorage.setItem(
@@ -3077,11 +3100,10 @@ function setLectureLength(value) {
     value;
 
   save();
-  render();
 }
 
 
-function generate() {
+async function generate() {
 
   if (
     !state.sources.length
@@ -3096,6 +3118,7 @@ function generate() {
     return;
   }
 
+
   if (
     !state.lectureTopic.trim()
   ) {
@@ -3109,9 +3132,393 @@ function generate() {
     return;
   }
 
-  toast(
-    t('aiNotConnected')
-  );
+
+  state.lectureGenerating = true;
+  state.generatedLecture = '';
+  state.lectureError = '';
+  state.lecturePassages = [];
+  state.screen = 'result';
+
+  save();
+  render();
+
+
+  try {
+
+    /*
+      Make sure the existing PDF search index
+      is ready before selecting passages.
+    */
+
+    if (!state.searchReady) {
+      await buildSearchIndex();
+    }
+
+
+    const topic =
+      normalizeSearchText(
+        state.lectureTopic.trim()
+      );
+
+
+    const allowedBookIds =
+      new Set(
+        state.sources
+          .map(
+            index =>
+              BOOKS[index]?.id
+          )
+          .filter(Boolean)
+      );
+
+
+    /*
+      Only PDF pages from the selected books
+      are candidates for the lecture.
+    */
+
+    let candidates =
+      state.searchIndex.filter(
+        row =>
+          row &&
+          row.pdf &&
+          allowedBookIds.has(
+            row.bookId
+          )
+      );
+
+
+    /*
+      Split the topic into meaningful words.
+    */
+
+    const topicWords =
+      topic
+        .split(/\s+/)
+        .map(
+          word =>
+            normalizeSearchText(
+              word.replace(
+                /^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu,
+                ''
+              )
+            )
+        )
+        .filter(
+          word =>
+            word.length >= 3
+        );
+
+
+    /*
+      Score each PDF page according to how strongly
+      it matches the requested lecture topic.
+    */
+
+    candidates =
+      candidates.map(
+        row => {
+
+          const text =
+            row.normalized ||
+            normalizeSearchText(
+              [
+                row.bookTitle,
+                row.author,
+                row.chapterTitle,
+                row.ref,
+                row.sanskrit,
+                row.transliteration,
+                row.english,
+                row.slovenian
+              ].join(' ')
+            );
+
+
+          let score = 0;
+
+
+          topicWords.forEach(
+            word => {
+
+              if (
+                text.includes(word)
+              ) {
+                score += 1;
+              }
+
+            }
+          );
+
+
+          /*
+            Strong bonus when the complete topic
+            occurs in the page text.
+          */
+
+          if (
+            topic &&
+            text.includes(topic)
+          ) {
+
+            score += 5;
+
+          }
+
+
+          /*
+            Bonus for book title or author matches
+            because users may include them in the topic.
+          */
+
+          const titleText =
+            normalizeSearchText(
+              row.bookTitle || ''
+            );
+
+          const authorText =
+            normalizeSearchText(
+              row.author || ''
+            );
+
+
+          topicWords.forEach(
+            word => {
+
+              if (
+                titleText.includes(word)
+              ) {
+                score += 2;
+              }
+
+              if (
+                authorText.includes(word)
+              ) {
+                score += 1;
+              }
+
+            }
+          );
+
+
+          return {
+            ...row,
+            lectureScore: score
+          };
+
+        }
+      );
+
+
+    candidates =
+      candidates
+        .filter(
+          row =>
+            row.lectureScore > 0
+        )
+        .sort(
+          (a, b) => {
+
+            if (
+              b.lectureScore !==
+              a.lectureScore
+            ) {
+
+              return (
+                b.lectureScore -
+                a.lectureScore
+              );
+
+            }
+
+            return (
+              Number(a.page || 0) -
+              Number(b.page || 0)
+            );
+
+          }
+        );
+
+
+    /*
+      Choose a manageable set of the best pages.
+    */
+
+    const selected =
+      candidates
+        .slice(0, 24)
+        .map(row => {
+
+          const rawText =
+            String(
+              row.sanskrit ||
+              row.english ||
+              ''
+            )
+            .replace(/\s+/g, ' ')
+            .trim();
+
+
+          const text =
+            rawText.length > 2600
+              ? rawText.slice(
+                  0,
+                  2600
+                ) + '…'
+              : rawText;
+
+
+          return {
+
+            bookTitle:
+              row.bookTitle || '',
+
+            author:
+              row.author || '',
+
+            page:
+              row.page || '',
+
+            text
+
+          };
+
+        });
+
+
+    if (!selected.length) {
+
+      throw new Error(
+        state.lang === 'sl'
+          ? 'V izbranih knjigah za to temo ni bilo mogoče najti ustreznih strani.'
+          : 'No relevant pages were found in the selected books.'
+      );
+    }
+
+
+    state.lecturePassages =
+      selected;
+
+    save();
+    render();
+
+
+    /*
+      Send the selected source passages
+      to the secure Cloudflare Worker.
+    */
+
+    const response =
+      await fetch(
+        'https://raganuga-lecture.eyeslotus.workers.dev',
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json'
+          },
+
+          body:
+            JSON.stringify({
+              topic:
+                state.lectureTopic.trim(),
+
+              language:
+                state.lang === 'sl'
+                  ? 'Slovenščina'
+                  : 'English',
+
+              length:
+                state.lectureLength,
+
+              passages:
+                selected
+            })
+        }
+      );
+
+
+    let data = null;
+
+    try {
+      data =
+        await response.json();
+    } catch (error) {
+      throw new Error(
+        'The AI service returned an invalid response.'
+      );
+    }
+
+
+    if (
+      !response.ok ||
+      !data ||
+      !data.success
+    ) {
+
+      throw new Error(
+        data?.error ||
+        `AI service returned HTTP ${response.status}.`
+      );
+    }
+
+
+    state.generatedLecture =
+      String(
+        data.lecture ||
+        ''
+      ).trim();
+
+
+    if (!state.generatedLecture) {
+
+      throw new Error(
+        state.lang === 'sl'
+          ? 'AI ni vrnil vsebine predavanja.'
+          : 'The AI returned an empty lecture.'
+      );
+    }
+
+
+    state.lectureError = '';
+    state.lectureGenerating = false;
+    state.screen = 'result';
+
+    save();
+    render();
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+
+
+  } catch (error) {
+
+    console.error(
+      'Lecture generation error:',
+      error
+    );
+
+
+    state.lectureGenerating =
+      false;
+
+    state.lectureError =
+      error?.message ||
+      (
+        state.lang === 'sl'
+          ? 'Predavanja ni bilo mogoče ustvariti.'
+          : 'Could not generate the lecture.'
+      );
+
+    state.screen = 'result';
+
+    save();
+    render();
+
+  }
 }
 
 
@@ -3119,6 +3526,36 @@ function create() {
 
   const selectedCount =
     state.sources.length;
+
+
+  if (
+    state.lectureGenerating
+  ) {
+
+    return layout(`
+
+      <div class="working">
+
+        <div class="dot"></div>
+
+        <h2 style="margin-top:20px">
+          ${
+            state.lang === 'sl'
+              ? 'AI pripravlja predavanje…'
+              : 'AI is preparing your lecture…'
+          }
+        </h2>
+
+        <div class="muted">
+          ${escapeHtml(
+            state.lectureTopic
+          )}
+        </div>
+
+      </div>
+
+    `);
+  }
 
 
   return layout(`
@@ -3275,12 +3712,12 @@ function create() {
         style="margin-top:10px">
 
         ${[
-  ['10', t('minutes10')],
-  ['20', t('minutes20')],
-  ['40', t('minutes40')],
-  ['60', t('minutes60')],
-  ['120', t('minutes120')]
-].map(
+          ['10', t('minutes10')],
+          ['20', t('minutes20')],
+          ['40', t('minutes40')],
+          ['60', t('minutes60')],
+          ['120', t('minutes120')]
+        ].map(
           ([value, label]) => `
 
             <button
@@ -3378,7 +3815,174 @@ function create() {
    RESULT
    ========================================================= */
 
+function formatLecture(text) {
+
+  const lines =
+    String(text || '')
+      .split(/\r?\n/);
+
+
+  return lines
+    .map(line => {
+
+      const clean =
+        line.trim();
+
+
+      if (!clean) {
+        return '<div style="height:10px"></div>';
+      }
+
+
+      const escaped =
+        escapeHtml(clean);
+
+
+      if (
+        escaped.startsWith('### ')
+      ) {
+
+        return `
+          <h4 style="margin-top:24px">
+            ${escaped.slice(4)}
+          </h4>
+        `;
+
+      }
+
+
+      if (
+        escaped.startsWith('## ')
+      ) {
+
+        return `
+          <h3 style="margin-top:28px">
+            ${escaped.slice(3)}
+          </h3>
+        `;
+
+      }
+
+
+      if (
+        escaped.startsWith('# ')
+      ) {
+
+        return `
+          <h2 style="margin-top:28px">
+            ${escaped.slice(2)}
+          </h2>
+        `;
+
+      }
+
+
+      const formatted =
+        escaped
+          .replace(
+            /\*\*(.*?)\*\*/g,
+            '<strong>$1</strong>'
+          );
+
+
+      return `
+        <p class="english">
+          ${formatted}
+        </p>
+      `;
+
+    })
+    .join('');
+}
+
+
 function result() {
+
+  if (
+    state.lectureGenerating
+  ) {
+
+    return layout(`
+
+      <div class="working">
+
+        <div class="dot"></div>
+
+        <h2 style="margin-top:20px">
+          ${
+            state.lang === 'sl'
+              ? 'AI pripravlja predavanje…'
+              : 'AI is preparing your lecture…'
+          }
+        </h2>
+
+        <div class="muted">
+          ${escapeHtml(
+            state.lectureTopic
+          )}
+        </div>
+
+      </div>
+
+    `);
+  }
+
+
+  if (
+    state.lectureError
+  ) {
+
+    return layout(`
+
+      <div class="top">
+
+        <button
+          class="back"
+          onclick="go('create')">
+          ‹
+        </button>
+
+        <div style="flex:1">
+
+          <strong>
+            ${t('aiLecture')}
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <div class="section card">
+
+        <h3>
+          ${
+            state.lang === 'sl'
+              ? 'Predavanja ni bilo mogoče ustvariti'
+              : 'Could not create the lecture'
+          }
+        </h3>
+
+        <p class="muted">
+          ${escapeHtml(
+            state.lectureError
+          )}
+        </p>
+
+      </div>
+
+
+      <button
+        class="primary"
+        onclick="generate()">
+
+        ✦ ${t('createLecture')}
+
+      </button>
+
+    `);
+  }
+
 
   return layout(`
 
@@ -3390,18 +3994,18 @@ function result() {
         ‹
       </button>
 
-      <div>
+      <div style="flex:1">
 
         <strong>
-          ${t('generatedWork')}
+          ${t('aiLecture')}
         </strong>
 
         <div class="muted">
 
-          ${t('from')}
           ${state.sources.length}
-          ${t('sourcesCount')}
-          · English
+          ${t('selectedBooks')}
+          ·
+          ${state.lectureLength} min
 
         </div>
 
@@ -3410,85 +4014,96 @@ function result() {
     </div>
 
 
+    <div
+      class="eyebrow"
+      style="margin-top:10px">
+
+      ${t('generatedWork')}
+
+    </div>
+
+
     <h1>
-      Taste Before Rule:
-      How Rāgānugā Bhakti Begins
+      ${escapeHtml(
+        state.lectureTopic
+      )}
     </h1>
-
-
-    <p class="muted">
-      A draft composed from the selected library sources.
-    </p>
 
 
     <div class="section">
 
-      <p class="english">
-
-        The Gosvāmī literature is unusually precise about where spontaneous devotion starts. It starts with a taste that appears in the heart after hearing about the moods of the residents of Vraja.
-
-      </p>
-
-
-      <p class="english">
-
-        Viśvanātha Cakravartī makes the sequence explicit: hearing produces greed, greed produces eligibility, and practice then takes the shape of rāgānugā.
-
-      </p>
-
-
-      <p class="english">
-
-        Continue hearing and singing, keep the association of those in whom the taste is already awake, and let the perfected identity be a matter of meditation rather than announcement.
-
-      </p>
-
-    </div>
-
-
-    <div class="card section">
-
-      <h3>
-        ${t('sources')}
-      </h3>
-
-      <div
-        class="muted"
-        style="margin-top:10px">
-
-        ${
-          state.sources
-            .map(
-              (index, number) =>
-                `${number + 1}. ${
-                  escapeHtml(
-                    BOOKS[index]?.short || ''
-                  )
-                } — ${
-                  escapeHtml(
-                    BOOKS[index]?.author || ''
-                  )
-                }`
+      ${
+        state.generatedLecture
+          ? formatLecture(
+              state.generatedLecture
             )
-            .join('<br>')
-        }
-
-      </div>
+          : `
+              <div class="muted">
+                ${
+                  state.lang === 'sl'
+                    ? 'Predavanje še ni ustvarjeno.'
+                    : 'The lecture has not been generated yet.'
+                }
+              </div>
+            `
+      }
 
     </div>
+
+
+    ${
+      state.lecturePassages.length
+        ? `
+
+          <div class="card section">
+
+            <h3>
+              ${t('sources')}
+            </h3>
+
+            <div
+              class="muted"
+              style="margin-top:10px">
+
+              ${
+                state.lecturePassages
+                  .map(
+                    (passage, index) =>
+                      `${index + 1}. ${
+                        escapeHtml(
+                          passage.bookTitle || ''
+                        )
+                      } — ${
+                        escapeHtml(
+                          passage.author || ''
+                        )
+                      }${
+                        passage.page
+                          ? ` · page ${
+                              escapeHtml(
+                                passage.page
+                              )
+                            }`
+                          : ''
+                      }`
+                  )
+                  .join('<br>')
+              }
+
+            </div>
+
+          </div>
+
+        `
+        : ''
+    }
 
 
     <button
       class="primary"
-      onclick="
-        toast(
-          '${escapeAttribute(
-            t('savedToWorks')
-          )}'
-        )
-      ">
+      onclick="go('create')">
 
-      ${t('saveWork')}
+      ← ${t('createLecture')}
 
     </button>
 
@@ -3811,33 +4426,42 @@ function saved() {
     </div>
 
 
-    <div class="row">
+    ${
+      state.generatedLecture
+        ? `
 
-      <div class="num">
-        A
-      </div>
+          <div class="row">
 
-      <div
-        class="grow"
-        onclick="go('result')"
-        style="cursor:pointer">
+            <div class="num">
+              A
+            </div>
 
-        <div>
-          Taste Before Rule:
-          How Rāgānugā Bhakti Begins
-        </div>
+            <div
+              class="grow"
+              onclick="go('result')"
+              style="cursor:pointer">
 
-        <div class="muted">
+              <div>
+                ${escapeHtml(
+                  state.lectureTopic
+                )}
+              </div>
 
-          ${state.sources.length}
-          ${t('sourcesCount')}
-          · ${t('draft')}
+              <div class="muted">
 
-        </div>
+                ${state.sources.length}
+                ${t('sourcesCount')}
+                · ${state.lectureLength} min
 
-      </div>
+              </div>
 
-    </div>
+            </div>
+
+          </div>
+
+        `
+        : ''
+    }
 
 
     <div class="row">
