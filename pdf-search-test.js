@@ -17,7 +17,7 @@
 
     const pdf = await loadingTask.promise;
 
-    const page = await pdf.getPage(1);
+    const page = await pdf.getPage(20);
     const content = await page.getTextContent();
 
     const text = content.items
