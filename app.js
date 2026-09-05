@@ -340,25 +340,6 @@ function t(key) {
 
 
 function save() {
-  try {
-    const savedState = {
-      ...state,
-      searchIndex: [],
-      searchReady: false,
-      searchLoading: false
-    };
-
-    localStorage.setItem(
-      'rb-state',
-      JSON.stringify(savedState)
-    );
-  } catch (error) {
-    console.warn(
-      'Could not save app state:',
-      error
-    );
-  }
-}
   localStorage.setItem(
     'rb-state',
     JSON.stringify(state)
