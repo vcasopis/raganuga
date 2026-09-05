@@ -340,10 +340,36 @@ function t(key) {
 
 
 function save() {
-  localStorage.setItem(
-    'rb-state',
-    JSON.stringify(state)
-  );
+  try {
+    const savedState = {
+      screen: state.screen,
+      book: state.book,
+      query: state.query,
+      filter: state.filter,
+      form: state.form,
+      sources: state.sources,
+      script: state.script,
+      toast: state.toast,
+      working: state.working,
+      step: state.step,
+      intent: state.intent,
+      lang: state.lang,
+      loadedBook: state.loadedBook,
+      loadedBookId: state.loadedBookId,
+      chapter: state.chapter,
+      bookmarks: state.bookmarks
+    };
+
+    localStorage.setItem(
+      'rb-state',
+      JSON.stringify(savedState)
+    );
+  } catch (error) {
+    console.warn(
+      'Could not save app state:',
+      error
+    );
+  }
 }
 
 
