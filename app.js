@@ -1,4 +1,3 @@
-```javascript
 const BOOKS = [
   {
     id: 'sample-book',
@@ -661,6 +660,9 @@ function openBook(index) {
     return;
   }
 
+  /*
+    A book with three parts gets its own selection screen.
+  */
   if (Array.isArray(book.pdfs) && book.pdfs.length) {
     state.screen = 'reader';
     save();
@@ -668,6 +670,9 @@ function openBook(index) {
     return;
   }
 
+  /*
+    A normal PDF opens directly.
+  */
   if (book.pdf) {
     save();
 
@@ -684,23 +689,13 @@ function openBook(index) {
 }
 
 
-function openPdf(file, page) {
+function openPdf(file) {
   if (!file) {
     return;
   }
 
-  let url = file;
-
-  if (
-    page !== undefined &&
-    page !== null &&
-    Number(page) > 0
-  ) {
-    url += '#page=' + Number(page);
-  }
-
   window.open(
-    url,
+    file,
     '_blank',
     'noopener,noreferrer'
   );
@@ -1050,6 +1045,10 @@ function reader() {
   }
 
 
+  /*
+    Caitanya-caritāmṛta:
+    one book, three PDF parts.
+  */
   if (
     Array.isArray(meta.pdfs) &&
     meta.pdfs.length
@@ -1145,6 +1144,9 @@ function reader() {
   }
 
 
+  /*
+    Normal PDF books.
+  */
   if (meta.pdf) {
 
     return layout(`
@@ -1204,6 +1206,9 @@ function reader() {
   }
 
 
+  /*
+    Sample book loading.
+  */
   if (
     meta.sample &&
     !state.loadedBook
@@ -1524,316 +1529,8 @@ function reader() {
 
 
 /* =========================================================
-   SEARCH — PDF.JS
+   SEARCH
    ========================================================= */
-
-let pdfjsPromise = null;
-
-
-async function loadPdfJs() {
-
-  if (pdfjsPromise) {
-    return pdfjsPromise;
-  }
-
-  pdfjsPromise = import(
-    'https://cdn.jsdelivr.net/npm/pdfjs-dist@6.2.108/build/pdf.min.mjs'
-  ).then(pdfjsLib => {
-
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      'https://cdn.jsdelivr.net/npm/pdfjs-dist@6.2.108/build/pdf.worker.min.mjs';
-
-    return pdfjsLib;
-
-  }).catch(error => {
-
-    pdfjsPromise = null;
-
-    console.error(
-      'PDF.js loading error:',
-      error
-    );
-
-    throw error;
-  });
-
-  return pdfjsPromise;
-}
-
-
-function normalizeSearchText(value) {
-
-  return String(value || '')
-    .normalize('NFD')
-    .replace(
-      /[\u0300-\u036f]/g,
-      ''
-    )
-    .toLowerCase();
-}
-
-
-function makeSearchText(item) {
-
-  return [
-    item.bookTitle,
-    item.author,
-    item.chapterTitle,
-    item.ref,
-    item.sanskrit,
-    item.transliteration,
-    item.english,
-    item.slovenian
-  ]
-    .join(' ')
-    .trim();
-}
-
-
-function makeSnippet(text, query) {
-
-  const source =
-    String(text || '')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-  if (!source) {
-    return '';
-  }
-
-  const normalizedSource =
-    normalizeSearchText(source);
-
-  const normalizedQuery =
-    normalizeSearchText(query);
-
-  if (!normalizedQuery) {
-    return source.slice(0, 280);
-  }
-
-  const position =
-    normalizedSource.indexOf(
-      normalizedQuery
-    );
-
-  if (position < 0) {
-    return source.slice(0, 280);
-  }
-
-  const start =
-    Math.max(
-      0,
-      position - 110
-    );
-
-  const end =
-    Math.min(
-      source.length,
-      position +
-        normalizedQuery.length +
-        170
-    );
-
-  let snippet =
-    source.slice(
-      start,
-      end
-    );
-
-  if (start > 0) {
-    snippet = '…' + snippet;
-  }
-
-  if (end < source.length) {
-    snippet += '…';
-  }
-
-  return snippet;
-}
-
-
-async function extractPdfText(
-  pdfUrl,
-  book,
-  partTitle = ''
-) {
-
-  const pdfjsLib =
-    await loadPdfJs();
-
-  const loadingTask =
-    pdfjsLib.getDocument({
-      url: pdfUrl,
-      enableScripting: false
-    });
-
-  const pdf =
-    await loadingTask.promise;
-
-  const results = [];
-
-  for (
-    let pageNumber = 1;
-    pageNumber <= pdf.numPages;
-    pageNumber++
-  ) {
-
-    try {
-
-      const page =
-        await pdf.getPage(
-          pageNumber
-        );
-
-      const textContent =
-        await page.getTextContent();
-
-      const text =
-        (textContent.items || [])
-          .map(
-            item =>
-              item.str || ''
-          )
-          .join(' ')
-          .replace(/\s+/g, ' ')
-          .trim();
-
-      if (!text) {
-        continue;
-      }
-
-      const chapterTitle =
-        partTitle
-          ? `${partTitle} · PDF · page ${pageNumber}`
-          : `PDF · page ${pageNumber}`;
-
-      results.push({
-
-        bookId:
-          book.id,
-
-        bookTitle:
-          book.short,
-
-        author:
-          book.author,
-
-        chapterIndex:
-          0,
-
-        chapterTitle,
-
-        ref:
-          `p. ${pageNumber}`,
-
-        page:
-          pageNumber,
-
-        pdf:
-          pdfUrl,
-
-        sanskrit:
-          text,
-
-        transliteration:
-          text,
-
-        english:
-          text,
-
-        slovenian:
-          text,
-
-        rawText:
-          text
-
-      });
-
-    } catch (pageError) {
-
-      console.warn(
-        'Could not read PDF page:',
-        book.short,
-        pageNumber,
-        pageError
-      );
-
-    }
-  }
-
-  return results;
-}
-
-
-function addSampleBookToSearchIndex(
-  book,
-  results
-) {
-
-  (book.chapters || [])
-    .forEach(
-      (
-        chapter,
-        chapterIndex
-      ) => {
-
-        (chapter.verses || [])
-          .forEach(verse => {
-
-            results.push({
-
-              bookId:
-                book.id,
-
-              bookTitle:
-                book.title,
-
-              author:
-                book.author,
-
-              chapterIndex,
-
-              chapterTitle:
-                chapter.title,
-
-              ref:
-                verse.ref,
-
-              page:
-                null,
-
-              pdf:
-                null,
-
-              sanskrit:
-                verse.sanskrit || '',
-
-              transliteration:
-                verse.transliteration || '',
-
-              english:
-                verse.english || '',
-
-              slovenian:
-                verse.slovenian || '',
-
-              rawText:
-                [
-                  verse.sanskrit,
-                  verse.transliteration,
-                  verse.english,
-                  verse.slovenian
-                ]
-                  .filter(Boolean)
-                  .join(' ')
-
-            });
-
-          });
-      }
-    );
-}
-
 
 async function buildSearchIndex() {
 
@@ -1846,207 +1543,73 @@ async function buildSearchIndex() {
 
   state.searchLoading = true;
 
-  state.searchIndex = [];
-
-  if (state.screen === 'search') {
-    render();
-  }
-
   try {
+
+    const response =
+      await fetch(
+        'data/sample-book.json',
+        {
+          cache: 'no-store'
+        }
+      );
+
+    if (!response.ok) {
+      throw new Error(
+        'HTTP ' + response.status
+      );
+    }
+
+    const book =
+      await response.json();
 
     const results = [];
 
-    /*
-      -------------------------------------------------------
-      1. SAMPLE BOOK
-      -------------------------------------------------------
-    */
+    (book.chapters || [])
+      .forEach(
+        (chapter, chapterIndex) => {
 
-    try {
+          (chapter.verses || [])
+            .forEach(verse => {
 
-      const response =
-        await fetch(
-          'data/sample-book.json',
-          {
-            cache: 'no-store'
-          }
-        );
+              results.push({
 
-      if (response.ok) {
+                bookId:
+                  book.id,
 
-        const book =
-          await response.json();
+                bookTitle:
+                  book.title,
 
-        addSampleBookToSearchIndex(
-          book,
-          results
-        );
+                author:
+                  book.author,
 
-      } else {
+                chapterIndex,
 
-        addSampleBookToSearchIndex(
-          FALLBACK_BOOK,
-          results
-        );
-      }
+                chapterTitle:
+                  chapter.title,
 
-    } catch (error) {
+                ref:
+                  verse.ref,
 
-      console.warn(
-        'Sample search book could not load:',
-        error
-      );
+                sanskrit:
+                  verse.sanskrit || '',
 
-      addSampleBookToSearchIndex(
-        FALLBACK_BOOK,
-        results
-      );
-    }
+                transliteration:
+                  verse.transliteration || '',
 
+                english:
+                  verse.english || '',
 
-    /*
-      -------------------------------------------------------
-      2. ALL SINGLE-PDF BOOKS
-      -------------------------------------------------------
-    */
+                slovenian:
+                  verse.slovenian || ''
 
-    const pdfBooks =
-      BOOKS.filter(
-        book =>
-          !book.sample &&
-          book.pdf
-      );
+              });
 
-
-    for (
-      const book of pdfBooks
-    ) {
-
-      if (state.screen === 'search') {
-        render();
-      }
-
-      try {
-
-        console.log(
-          'Indexing PDF:',
-          book.short
-        );
-
-        const pdfResults =
-          await extractPdfText(
-            book.pdf,
-            book
-          );
-
-        results.push(
-          ...pdfResults
-        );
-
-        console.log(
-          'Indexed:',
-          book.short,
-          pdfResults.length,
-          'pages'
-        );
-
-      } catch (error) {
-
-        console.error(
-          'Could not index PDF:',
-          book.short,
-          error
-        );
-
-      }
-    }
-
-
-    /*
-      -------------------------------------------------------
-      3. CAITANYA-CARITĀMṚTA — ALL THREE PARTS
-      -------------------------------------------------------
-    */
-
-    const caitanya =
-      BOOKS.find(
-        book =>
-          book.id ===
-          'caitanya-caramitamrita'
-      );
-
-
-    if (
-      caitanya &&
-      Array.isArray(caitanya.pdfs)
-    ) {
-
-      for (
-        const part of caitanya.pdfs
-      ) {
-
-        if (state.screen === 'search') {
-          render();
+            });
         }
+      );
 
-        try {
-
-          console.log(
-            'Indexing PDF:',
-            caitanya.short,
-            part.title
-          );
-
-          const pdfResults =
-            await extractPdfText(
-              part.file,
-              caitanya,
-              part.title
-            );
-
-          results.push(
-            ...pdfResults.map(
-              item => ({
-                ...item,
-                partId:
-                  part.id,
-                partTitle:
-                  part.title
-              })
-            )
-          );
-
-          console.log(
-            'Indexed:',
-            part.title,
-            pdfResults.length,
-            'pages'
-          );
-
-        } catch (error) {
-
-          console.error(
-            'Could not index PDF:',
-            part.title,
-            error
-          );
-
-        }
-      }
-    }
-
-
-    state.searchIndex =
-      results;
-
-    state.searchReady =
-      true;
-
-    console.log(
-      'Search index ready:',
-      results.length,
-      'searchable pages/passages'
-    );
+    state.searchIndex = results;
+    state.searchReady = true;
 
   } catch (error) {
 
@@ -2055,23 +1618,56 @@ async function buildSearchIndex() {
       error
     );
 
-    /*
-      Even if PDF.js fails, keep the sample
-      book searchable.
-    */
+    const book =
+      FALLBACK_BOOK;
 
-    if (
-      !state.searchIndex.length
-    ) {
+    const results = [];
 
-      state.searchIndex = [];
+    (book.chapters || [])
+      .forEach(
+        (chapter, chapterIndex) => {
 
-      addSampleBookToSearchIndex(
-        FALLBACK_BOOK,
-        state.searchIndex
+          (chapter.verses || [])
+            .forEach(verse => {
+
+              results.push({
+
+                bookId:
+                  book.id,
+
+                bookTitle:
+                  book.title,
+
+                author:
+                  book.author,
+
+                chapterIndex,
+
+                chapterTitle:
+                  chapter.title,
+
+                ref:
+                  verse.ref,
+
+                sanskrit:
+                  verse.sanskrit || '',
+
+                transliteration:
+                  verse.transliteration || '',
+
+                english:
+                  verse.english || '',
+
+                slovenian:
+                  verse.slovenian || ''
+
+              });
+
+            });
+        }
       );
-    }
 
+    state.searchIndex = results;
     state.searchReady = true;
 
   } finally {
@@ -2103,92 +1699,35 @@ function getVisibleSearchResults() {
 
   const query =
     state.query
-      .trim();
+      .trim()
+      .toLowerCase();
 
   let results =
     state.searchIndex;
 
-
-  /*
-    Search filter.
-  */
-
-  if (
-    state.filter &&
-    state.filter !== 'All books'
-  ) {
-
-    if (
-      state.filter === 'English'
-    ) {
-
-      results =
-        results.filter(
-          item =>
-            item.english &&
-            item.english.trim()
-        );
-
-    } else if (
-      state.filter === 'Slovenian'
-    ) {
-
-      results =
-        results.filter(
-          item =>
-            item.slovenian &&
-            item.slovenian.trim()
-        );
-
-    } else if (
-      state.filter === 'Sanskrit'
-    ) {
-
-      results =
-        results.filter(
-          item =>
-            item.sanskrit &&
-            item.sanskrit.trim()
-        );
-    }
-  }
-
-
-  /*
-    Text search.
-  */
-
   if (query) {
-
-    const normalizedQuery =
-      normalizeSearchText(
-        query
-      );
 
     results =
       results.filter(item => {
 
-        const text =
-          makeSearchText(item);
+        const text = [
 
-        const normalizedText =
-          normalizeSearchText(
-            text
-          );
+          item.bookTitle,
+          item.author,
+          item.chapterTitle,
+          item.ref,
+          item.sanskrit,
+          item.transliteration,
+          item.english,
+          item.slovenian
 
-        return (
-          text
-            .toLowerCase()
-            .includes(
-              query.toLowerCase()
-            ) ||
-          normalizedText.includes(
-            normalizedQuery
-          )
-        );
+        ]
+          .join(' ')
+          .toLowerCase();
+
+        return text.includes(query);
       });
   }
-
 
   return results;
 }
@@ -2200,14 +1739,11 @@ function search() {
     !state.searchReady &&
     !state.searchLoading
   ) {
-
     buildSearchIndex();
   }
 
 
-  if (
-    !state.searchReady
-  ) {
+  if (!state.searchReady) {
 
     return layout(`
 
@@ -2223,18 +1759,9 @@ function search() {
 
       <div
         class="muted"
-        style="
-          margin-top:20px;
-          line-height:1.6
-        ">
+        style="margin-top:20px">
 
         ${t('searching')}
-
-        <br>
-
-        <span style="font-size:12px">
-          PDF.js is reading the books in your browser…
-        </span>
 
       </div>
 
@@ -2306,9 +1833,7 @@ function search() {
 
     <div
       class="muted"
-      style="
-        margin-bottom:8px
-      ">
+      style="margin-bottom:8px">
 
       ${results.length}
       ${t('passages')}
@@ -2321,143 +1846,92 @@ function search() {
 
         ? results
             .map(
-              (result, index) => {
+              (result, index) => `
 
-                const searchableText =
-                  result.rawText ||
-                  result.english ||
-                  result.sanskrit ||
-                  '';
+                <div
+                  class="result"
+                  onclick="
+                    openSearchResult(
+                      ${index}
+                    )
+                  ">
 
-                const snippet =
-                  makeSnippet(
-                    searchableText,
-                    state.query
-                  );
+                  <div class="booktitle">
 
-                const isPdf =
-                  Boolean(
-                    result.pdf
-                  );
+                    ${escapeHtml(
+                      result.bookTitle
+                    )}
 
-                return `
+                    ·
+
+                    ${escapeHtml(
+                      result.ref
+                    )}
+
+                  </div>
+
+
+                  <div class="muted">
+
+                    ${escapeHtml(
+                      t('chapterResult')
+                    )}
+
+                    ${result.chapterIndex + 1}
+
+                    ·
+
+                    ${escapeHtml(
+                      result.chapterTitle
+                    )}
+
+                  </div>
+
 
                   <div
-                    class="result"
-                    onclick="
-                      openSearchResult(
-                        ${index}
-                      )
+                    style="
+                      font-size:13px;
+                      line-height:1.55;
+                      margin-top:4px
                     ">
 
-                    <div class="booktitle">
-
-                      ${escapeHtml(
-                        result.bookTitle
-                      )}
-
-                      ·
-
-                      ${escapeHtml(
-                        result.ref
-                      )}
-
-                    </div>
-
-
-                    <div class="muted">
-
-                      ${
-                        isPdf
-                          ? escapeHtml(
-                              result.chapterTitle
-                            )
-                          : `
-                            ${escapeHtml(
-                              t('chapterResult')
-                            )}
-
-                            ${
-                              Number(
-                                result.chapterIndex
-                              ) + 1
-                            }
-
-                            ·
-
-                            ${escapeHtml(
-                              result.chapterTitle
-                            )}
-                          `
-                      }
-
-                    </div>
-
-
-                    <div
-                      style="
-                        font-size:13px;
-                        line-height:1.55;
-                        margin-top:7px
-                      ">
-
-                      ${escapeHtml(
-                        snippet
-                      )}
-
-                    </div>
-
-
                     ${
-                      isPdf
-                        ? `
-                          <div
-                            class="muted"
-                            style="
-                              margin-top:8px;
-                              font-size:11px
-                            ">
-
-                            PDF ·
-                            ${escapeHtml(
-                              result.ref
-                            )}
-
-                          </div>
-                        `
-                        : `
-                          <div
-                            class="muted"
-                            style="
-                              margin-top:7px;
-                              font-size:11px
-                            ">
-
-                            ${escapeHtml(
-                              result.sanskrit
-                            )}
-
-                          </div>
-                        `
+                      state.lang === 'sl'
+                        ? escapeHtml(
+                            result.slovenian ||
+                            result.english
+                          )
+                        : escapeHtml(
+                            result.english
+                          )
                     }
 
                   </div>
 
-                `;
-              }
+
+                  <div
+                    class="muted"
+                    style="
+                      margin-top:7px;
+                      font-size:11px
+                    ">
+
+                    ${escapeHtml(
+                      result.sanskrit
+                    )}
+
+                  </div>
+
+                </div>
+
+              `
             )
             .join('')
 
         : `
 
-          <div
-            class="muted"
-            style="
-              padding:20px 0
-            ">
-
+          <div class="muted">
             ${t('noResults')}
-
           </div>
 
         `
@@ -2479,46 +1953,16 @@ function openSearchResult(index) {
     return;
   }
 
-
-  /*
-    PDF result:
-    open the actual PDF at the page
-    where the text was found.
-  */
-
-  if (
-    result.pdf
-  ) {
-
-    openPdf(
-      result.pdf,
-      result.page
-    );
-
-    return;
-  }
-
-
-  /*
-    Structured sample-book result.
-  */
-
   state.book = 0;
-
   state.loadedBookId =
     'sample-book';
-
   state.chapter =
-    Number(
-      result.chapterIndex
-    ) || 0;
-
+    Number(result.chapterIndex) || 0;
   state.screen =
     'reader';
 
   save();
   render();
-
 
   if (
     !state.loadedBook ||
@@ -2988,14 +2432,16 @@ function openBookmark(index) {
     return;
   }
 
-
+  /*
+    If an old bookmark belongs to the sample
+    book, open it normally.
+  */
   const bookIndex =
     BOOKS.findIndex(
       book =>
         book.id ===
         bookmark.bookId
     );
-
 
   if (
     bookIndex < 0 ||
@@ -3053,6 +2499,12 @@ function openBookmark(index) {
   }
 
 
+  /*
+    A PDF bookmark cannot currently jump to
+    an internal PDF page because the bookmark
+    only stores verse/chapter information.
+    Open the corresponding PDF instead.
+  */
   const book =
     BOOKS[bookIndex];
 
@@ -3456,4 +2908,3 @@ window.render =
    ========================================================= */
 
 render();
-```
