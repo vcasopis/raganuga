@@ -210,6 +210,8 @@ const I18N = {
     minutes10: '10 min',
     minutes20: '20 min',
     minutes40: '40 min',
+    minutes60: '60 min',
+    minutes120: '120 min',
     lectureLanguage: 'Lecture language',
     createLecture: 'Create lecture',
     aiNotConnected: 'AI generation will be connected next.'
@@ -302,6 +304,8 @@ const I18N = {
     minutes10: '10 min',
     minutes20: '20 min',
     minutes40: '40 min',
+    minutes60: '60 min',
+    minutes120: '120 min',
     lectureLanguage: 'Jezik predavanja',
     createLecture: 'Ustvari predavanje',
     aiNotConnected: 'AI generiranje bomo povezali v naslednjem koraku.'
@@ -3271,10 +3275,12 @@ function create() {
         style="margin-top:10px">
 
         ${[
-          ['10', t('minutes10')],
-          ['20', t('minutes20')],
-          ['40', t('minutes40')]
-        ].map(
+  ['10', t('minutes10')],
+  ['20', t('minutes20')],
+  ['40', t('minutes40')],
+  ['60', t('minutes60')],
+  ['120', t('minutes120')]
+].map(
           ([value, label]) => `
 
             <button
