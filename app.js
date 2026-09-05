@@ -1,3 +1,4 @@
+```javascript
 const BOOKS = [
   {
     id: 'sample-book',
@@ -334,16 +335,51 @@ if (!Array.isArray(state.sources)) {
 }
 
 
+/*
+  IMPORTANT:
+  The PDF search index is large and must NOT be stored
+  in localStorage. It lives in memory + IndexedDB.
+  This also removes an older huge searchIndex that may
+  have been saved by a previous version.
+*/
+state.searchIndex = [];
+state.searchReady = false;
+state.searchLoading = false;
+
+
 function t(key) {
   return I18N[state.lang]?.[key] || I18N.en[key] || key;
 }
 
 
+/*
+  Save only the small application state.
+  The large PDF search index is intentionally excluded.
+*/
 function save() {
-  localStorage.setItem(
-    'rb-state',
-    JSON.stringify(state)
-  );
+
+  try {
+
+    const savedState = {
+      ...state,
+      searchIndex: [],
+      searchReady: false,
+      searchLoading: false
+    };
+
+    localStorage.setItem(
+      'rb-state',
+      JSON.stringify(savedState)
+    );
+
+  } catch (error) {
+
+    console.warn(
+      'Could not save application state:',
+      error
+    );
+
+  }
 }
 
 
@@ -2304,7 +2340,7 @@ async function buildSearchIndex() {
 
     /*
       The current cache is valid only when it
-      contains data for all eight PDF parts.
+      contains data for all PDF parts.
     */
 
     const cachedPdfIds =
@@ -2435,10 +2471,38 @@ async function buildSearchIndex() {
 }
 
 
+/*
+  FIX:
+  Do not call save() on every keystroke.
+  The input is re-rendered, so we restore focus
+  and place the cursor at the end.
+*/
 function setSearchQuery(value) {
+
   state.query = value;
-  save();
+
   render();
+
+  requestAnimationFrame(() => {
+
+    const input =
+      document.querySelector('.search');
+
+    if (!input) {
+      return;
+    }
+
+    input.focus();
+
+    const length =
+      input.value.length;
+
+    input.setSelectionRange(
+      length,
+      length
+    );
+
+  });
 }
 
 
@@ -3824,3 +3888,4 @@ window.render =
    ========================================================= */
 
 render();
+```
