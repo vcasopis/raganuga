@@ -10,7 +10,8 @@ const BOOKS = [
     id: 'bhakti-rasamrita-sindhu',
     short: 'Bhakti-rasāmṛta-sindhu',
     author: 'Rūpa Gosvāmī',
-    script: 'Sanskrit · 4 divisions'
+    script: 'Sanskrit · 4 divisions',
+    pdf: 'books/Bhakti-rasāmṛta-sindhu.pdf'
   },
   {
     id: 'raga-vartma-candrika',
@@ -23,27 +24,48 @@ const BOOKS = [
     id: 'ujjvala-nilamani',
     short: 'Ujjvala-nīlamaṇi',
     author: 'Rūpa Gosvāmī',
-    script: 'Sanskrit · 15 chapters'
+    script: 'Sanskrit · 15 chapters',
+    pdf: 'books/Ujjvala-nilamani-kirana_1Ed_2013.pdf'
   },
   {
     id: 'madhurya-kadambini',
     short: 'Mādhurya-kādambinī',
     author: 'Viśvanātha Cakravartī',
-    script: 'Sanskrit · 8 showers'
+    script: 'Sanskrit · 8 showers',
+    pdf: 'books/Madhurya-kadambini-eng-1ed.pdf'
   },
   {
     id: 'prema-bhakti-candrika',
     short: 'Prema-bhakti-candrikā',
     author: 'Narottama dāsa',
-    script: 'Bengali · 8 rays'
+    script: 'Bengali · 8 rays',
+    pdf: 'books/Sri_Prema_Bhakti_Candrika.pdf'
   },
   {
     id: 'caitanya-caramitamrita',
     short: 'Caitanya-caritāmṛta',
     author: 'Kṛṣṇadāsa Kavirāja',
-    script: 'Bengali · 3 līlās'
+    script: 'Bengali · 3 līlās',
+    pdfs: [
+      {
+        id: 'adi-lila',
+        title: 'Ādi-līlā',
+        file: 'books/Sri Caitanya-cartamrta Adi-lila.pdf'
+      },
+      {
+        id: 'madhya-lila',
+        title: 'Madhya-līlā',
+        file: 'books/Sri Caitanya-cartamrta Madhya-lila.pdf'
+      },
+      {
+        id: 'antya-lila',
+        title: 'Antya-līlā',
+        file: 'books/Sri Caitanya-cartamrta Antya-lila.pdf'
+      }
+    ]
   }
 ];
+
 
 const FALLBACK_BOOK = {
   id: 'sample-book',
@@ -94,6 +116,7 @@ const FALLBACK_BOOK = {
   ]
 };
 
+
 const FORMS = [
   'Article',
   'New book',
@@ -104,6 +127,7 @@ const FORMS = [
   'Q&A',
   'Class outline'
 ];
+
 
 const I18N = {
   en: {
@@ -170,7 +194,12 @@ const I18N = {
     savedWorks: 'Saved works',
     resultIn: 'in',
     chapterResult: 'Chapter',
-    searchHint: 'Search Sanskrit, transliteration, English or Slovenian text.'
+    searchHint: 'Search Sanskrit, transliteration, English or Slovenian text.',
+    openPdf: 'Open PDF',
+    choosePart: 'Choose a part',
+    adiLila: 'Ādi-līlā',
+    madhyaLila: 'Madhya-līlā',
+    antyaLila: 'Antya-līlā'
   },
 
   sl: {
@@ -237,9 +266,15 @@ const I18N = {
     savedWorks: 'Shranjena dela',
     resultIn: 'v',
     chapterResult: 'Poglavje',
-    searchHint: 'Išči po sanskrtu, transliteraciji, angleškem ali slovenskem besedilu.'
+    searchHint: 'Išči po sanskrtu, transliteraciji, angleškem ali slovenskem besedilu.',
+    openPdf: 'Odpri PDF',
+    choosePart: 'Izberi del',
+    adiLila: 'Ādi-līlā',
+    madhyaLila: 'Madhya-līlā',
+    antyaLila: 'Antya-līlā'
   }
 };
+
 
 let state = {
   screen: 'library',
@@ -263,12 +298,14 @@ let state = {
   searchLoading: false
 };
 
+
 try {
   Object.assign(
     state,
     JSON.parse(localStorage.getItem('rb-state') || '{}')
   );
 } catch (e) {}
+
 
 if (!state.lang) {
   state.lang = 'en';
@@ -282,13 +319,19 @@ if (!Array.isArray(state.sources)) {
   state.sources = [0, 1, 2, 3];
 }
 
+
 function t(key) {
   return I18N[state.lang]?.[key] || I18N.en[key] || key;
 }
 
+
 function save() {
-  localStorage.setItem('rb-state', JSON.stringify(state));
+  localStorage.setItem(
+    'rb-state',
+    JSON.stringify(state)
+  );
 }
+
 
 function escapeHtml(value) {
   return String(value ?? '')
@@ -299,27 +342,30 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
+
 function escapeAttribute(value) {
   return String(value ?? '')
     .replace(/\\/g, '\\\\')
     .replace(/'/g, "\\'");
 }
 
+
 function setLanguage(lang) {
   state.lang = lang;
 
-  if (lang === 'sl') {
-    state.intent = I18N.sl.defaultIntent;
-  } else {
-    state.intent = I18N.en.defaultIntent;
-  }
+  state.intent =
+    lang === 'sl'
+      ? I18N.sl.defaultIntent
+      : I18N.en.defaultIntent;
 
   save();
   render();
 }
 
+
 function go(screen) {
   state.screen = screen;
+
   save();
   render();
 
@@ -328,6 +374,7 @@ function go(screen) {
     behavior: 'smooth'
   });
 }
+
 
 function toast(message) {
   state.toast = message;
@@ -339,9 +386,11 @@ function toast(message) {
   }, 1800);
 }
 
+
 function languageSelector() {
   return `
     <div class="language-selector">
+
       <button
         class="chip ${state.lang === 'en' ? 'on' : ''}"
         onclick="setLanguage('en')">
@@ -353,13 +402,16 @@ function languageSelector() {
         onclick="setLanguage('sl')">
         🇸🇮 SL
       </button>
+
     </div>
   `;
 }
 
+
 function nav() {
   return `
     <nav class="nav">
+
       ${[
         ['library', '▦', t('library')],
         ['search', '⌕', t('search')],
@@ -369,21 +421,30 @@ function nav() {
         <button
           class="${state.screen === key ? 'active' : ''}"
           onclick="go('${key}')">
+
           ${icon}
           <small>${label}</small>
+
         </button>
       `).join('')}
+
     </nav>
   `;
 }
 
+
 function layout(body) {
   return `
     <div class="shell">
+
       <main class="phone">
+
         <div class="content">
+
           ${languageSelector()}
+
           ${body}
+
         </div>
 
         ${nav()}
@@ -393,16 +454,28 @@ function layout(body) {
             ? `<div class="toast">${escapeHtml(state.toast)}</div>`
             : ''
         }
+
       </main>
+
     </div>
   `;
 }
 
+
+/* =========================================================
+   LIBRARY
+   ========================================================= */
+
 function library() {
   return layout(`
-    <div class="eyebrow">${t('library')}</div>
 
-    <h1>Rāgānugā Bhakti</h1>
+    <div class="eyebrow">
+      ${t('library')}
+    </div>
+
+    <h1>
+      Rāgānugā Bhakti
+    </h1>
 
     <div
       class="section resume"
@@ -425,8 +498,11 @@ function library() {
         style="margin-top:12px">
 
         <i style="width:${getProgress(0)}%"></i>
+
       </div>
+
     </div>
+
 
     <div class="section">
 
@@ -438,21 +514,27 @@ function library() {
           margin-bottom:12px
         ">
 
-        <h3>${t('books')}</h3>
+        <h3>
+          ${t('books')}
+        </h3>
 
         <span class="muted">
           ${BOOKS.length} ${t('titles')}
         </span>
+
       </div>
+
 
       <div class="grid">
 
         ${BOOKS.map((book, index) => `
+
           <div
             class="book"
             onclick="openBook(${index})">
 
             <div class="cover">
+
               <strong>
                 ${escapeHtml(book.short)}
               </strong>
@@ -460,16 +542,21 @@ function library() {
               <span class="muted">
                 ${escapeHtml(book.script)}
               </span>
+
             </div>
 
             <div class="bookname">
               ${escapeHtml(book.author)}
             </div>
+
           </div>
+
         `).join('')}
 
       </div>
+
     </div>
+
 
     <div class="section">
 
@@ -497,6 +584,7 @@ function library() {
           'saved'
         ]
       ].map(item => `
+
         <div
           class="row"
           onclick="go('${item[3]}')">
@@ -523,6 +611,7 @@ function library() {
             </div>
 
             <div class="muted">
+
               ${
                 state.lang === 'sl'
                   ? ({
@@ -535,15 +624,19 @@ function library() {
                     }[item[2]] || item[2])
                   : item[2]
               }
+
             </div>
 
           </div>
 
           <span>›</span>
+
         </div>
+
       `).join('')}
 
     </div>
+
   `);
 }
 
@@ -562,18 +655,23 @@ function openBook(index) {
     return;
   }
 
-  /*
-    Sample book:
-    load the structured JSON reader.
-  */
   if (book.sample) {
     loadSampleBook();
     return;
   }
 
   /*
-    PDF book:
-    open the PDF directly from GitHub Pages.
+    A book with three parts gets its own selection screen.
+  */
+  if (Array.isArray(book.pdfs) && book.pdfs.length) {
+    state.screen = 'reader';
+    save();
+    render();
+    return;
+  }
+
+  /*
+    A normal PDF opens directly.
   */
   if (book.pdf) {
     save();
@@ -587,11 +685,20 @@ function openBook(index) {
     return;
   }
 
-  /*
-    Books without PDF or structured content:
-    keep the existing reader behavior.
-  */
   go('reader');
+}
+
+
+function openPdf(file) {
+  if (!file) {
+    return;
+  }
+
+  window.open(
+    file,
+    '_blank',
+    'noopener,noreferrer'
+  );
 }
 
 
@@ -604,22 +711,29 @@ async function loadSampleBook() {
   render();
 
   try {
-    const response = await fetch('data/sample-book.json', {
-      cache: 'no-store'
-    });
+    const response = await fetch(
+      'data/sample-book.json',
+      {
+        cache: 'no-store'
+      }
+    );
 
     if (!response.ok) {
-      throw new Error('HTTP ' + response.status);
+      throw new Error(
+        'HTTP ' + response.status
+      );
     }
 
     const data = await response.json();
 
     state.loadedBook = data;
-    state.loadedBookId = data.id || 'sample-book';
+    state.loadedBookId =
+      data.id || 'sample-book';
 
     if (
       state.chapter < 0 ||
-      state.chapter >= (data.chapters || []).length
+      state.chapter >=
+        (data.chapters || []).length
     ) {
       state.chapter = 0;
     }
@@ -628,7 +742,11 @@ async function loadSampleBook() {
     render();
 
   } catch (error) {
-    console.error('Sample book loading error:', error);
+
+    console.error(
+      'Sample book loading error:',
+      error
+    );
 
     state.loadedBook = FALLBACK_BOOK;
     state.loadedBookId = 'sample-book';
@@ -642,8 +760,11 @@ async function loadSampleBook() {
   }
 }
 
+
 function getCurrentBook() {
+
   if (state.book === 0) {
+
     if (state.loadedBook) {
       return state.loadedBook;
     }
@@ -662,7 +783,13 @@ function getCurrentBook() {
   };
 }
 
+
+/* =========================================================
+   PROGRESS
+   ========================================================= */
+
 function getProgress(bookIndex) {
+
   const book = BOOKS[bookIndex];
 
   if (!book) {
@@ -670,16 +797,26 @@ function getProgress(bookIndex) {
   }
 
   const value = Number(
-    localStorage.getItem('rb-progress-' + book.id) || 0
+    localStorage.getItem(
+      'rb-progress-' + book.id
+    ) || 0
   );
 
-  return Math.max(0, Math.min(100, value));
+  return Math.max(
+    0,
+    Math.min(100, value)
+  );
 }
 
+
 function setProgress(bookId, value) {
+
   const safeValue = Math.max(
     0,
-    Math.min(100, Math.round(value))
+    Math.min(
+      100,
+      Math.round(value)
+    )
   );
 
   localStorage.setItem(
@@ -688,7 +825,9 @@ function setProgress(bookId, value) {
   );
 }
 
+
 function updateReadingProgress() {
+
   const book = getCurrentBook();
 
   if (
@@ -700,7 +839,9 @@ function updateReadingProgress() {
   }
 
   const progress =
-    ((state.chapter + 1) / book.chapters.length) * 100;
+    ((state.chapter + 1) /
+      book.chapters.length) *
+    100;
 
   setProgress(
     book.id || 'sample-book',
@@ -708,33 +849,62 @@ function updateReadingProgress() {
   );
 }
 
+
 function currentChapter() {
+
   const book = getCurrentBook();
 
-  if (!book || !Array.isArray(book.chapters)) {
+  if (
+    !book ||
+    !Array.isArray(book.chapters)
+  ) {
     return null;
   }
 
-  return book.chapters[state.chapter] || null;
+  return (
+    book.chapters[state.chapter] ||
+    null
+  );
 }
+
+
+/* =========================================================
+   BOOKMARKS
+   ========================================================= */
 
 function isBookmarked(ref) {
-  return state.bookmarks.some(bookmark =>
-    bookmark.bookId === state.loadedBookId &&
-    Number(bookmark.chapter) === Number(state.chapter) &&
-    String(bookmark.ref) === String(ref)
+
+  return state.bookmarks.some(
+    bookmark =>
+      bookmark.bookId ===
+        state.loadedBookId &&
+      Number(bookmark.chapter) ===
+        Number(state.chapter) &&
+      String(bookmark.ref) ===
+        String(ref)
   );
 }
 
+
 function toggleBookmark(ref) {
-  const existing = state.bookmarks.findIndex(bookmark =>
-    bookmark.bookId === state.loadedBookId &&
-    Number(bookmark.chapter) === Number(state.chapter) &&
-    String(bookmark.ref) === String(ref)
-  );
+
+  const existing =
+    state.bookmarks.findIndex(
+      bookmark =>
+        bookmark.bookId ===
+          state.loadedBookId &&
+        Number(bookmark.chapter) ===
+          Number(state.chapter) &&
+        String(bookmark.ref) ===
+          String(ref)
+    );
 
   if (existing >= 0) {
-    state.bookmarks.splice(existing, 1);
+
+    state.bookmarks.splice(
+      existing,
+      1
+    );
 
     save();
     render();
@@ -748,22 +918,52 @@ function toggleBookmark(ref) {
 
   const book = getCurrentBook();
   const chapter = currentChapter();
-  const verse = (chapter?.verses || []).find(
-    item => String(item.ref) === String(ref)
-  );
+
+  const verse =
+    (chapter?.verses || []).find(
+      item =>
+        String(item.ref) ===
+        String(ref)
+    );
 
   state.bookmarks.push({
-    bookId: state.loadedBookId || book.id || 'sample-book',
-    bookTitle: book.title || 'Rāgānugā Bhakti — Sample Book',
-    author: book.author || 'Sample Edition',
-    chapter: Number(state.chapter),
-    chapterTitle: chapter?.title || '',
-    ref: String(ref),
-    english: verse?.english || '',
-    slovenian: verse?.slovenian || '',
-    sanskrit: verse?.sanskrit || '',
-    transliteration: verse?.transliteration || '',
-    created: new Date().toISOString()
+
+    bookId:
+      state.loadedBookId ||
+      book.id ||
+      'sample-book',
+
+    bookTitle:
+      book.title ||
+      'Rāgānugā Bhakti — Sample Book',
+
+    author:
+      book.author ||
+      'Sample Edition',
+
+    chapter:
+      Number(state.chapter),
+
+    chapterTitle:
+      chapter?.title || '',
+
+    ref:
+      String(ref),
+
+    english:
+      verse?.english || '',
+
+    slovenian:
+      verse?.slovenian || '',
+
+    sanskrit:
+      verse?.sanskrit || '',
+
+    transliteration:
+      verse?.transliteration || '',
+
+    created:
+      new Date().toISOString()
   });
 
   save();
@@ -774,8 +974,11 @@ function toggleBookmark(ref) {
   }, 50);
 }
 
+
 function previousChapter() {
+
   if (state.chapter > 0) {
+
     state.chapter--;
 
     updateReadingProgress();
@@ -790,13 +993,17 @@ function previousChapter() {
   }
 }
 
+
 function nextChapter() {
+
   const book = getCurrentBook();
 
   if (
     book.chapters &&
-    state.chapter < book.chapters.length - 1
+    state.chapter <
+      book.chapters.length - 1
   ) {
+
     state.chapter++;
 
     updateReadingProgress();
@@ -810,30 +1017,45 @@ function nextChapter() {
     });
 
   } else {
+
     updateReadingProgress();
+
     toast(t('endSection'));
   }
 }
 
+
+/* =========================================================
+   READER
+   ========================================================= */
+
 function reader() {
+
   const meta = BOOKS[state.book];
 
   if (!meta) {
+
     return layout(`
       <h2>${t('reader')}</h2>
+
       <div class="muted">
         ${t('loading')}
       </div>
     `);
   }
 
+
   /*
-    A PDF book is opened directly.
-    This is only a fallback in case the user somehow reaches
-    the reader screen for a PDF book.
+    Caitanya-caritāmṛta:
+    one book, three PDF parts.
   */
-  if (meta.pdf) {
+  if (
+    Array.isArray(meta.pdfs) &&
+    meta.pdfs.length
+  ) {
+
     return layout(`
+
       <div class="top">
 
         <button
@@ -856,7 +1078,107 @@ function reader() {
 
       </div>
 
+
       <div class="section">
+
+        <div class="eyebrow">
+          ${t('reader')}
+        </div>
+
+        <h2>
+          ${escapeHtml(meta.short)}
+        </h2>
+
+        <p class="muted">
+          ${escapeHtml(meta.author)}
+          ·
+          ${escapeHtml(meta.script)}
+        </p>
+
+        <h3 style="margin-top:24px">
+          ${t('choosePart')}
+        </h3>
+
+        <div
+          style="
+            display:grid;
+            gap:12px;
+            margin-top:14px
+          ">
+
+          ${meta.pdfs.map(part => `
+
+            <button
+              class="select"
+              style="
+                text-align:left;
+                padding:16px
+              "
+              onclick="
+                openPdf(
+                  '${escapeAttribute(part.file)}'
+                )
+              ">
+
+              <strong>
+                ${escapeHtml(part.title)}
+              </strong>
+
+              <div
+                class="muted"
+                style="margin-top:4px">
+
+                PDF
+
+              </div>
+
+            </button>
+
+          `).join('')}
+
+        </div>
+
+      </div>
+
+    `);
+  }
+
+
+  /*
+    Normal PDF books.
+  */
+  if (meta.pdf) {
+
+    return layout(`
+
+      <div class="top">
+
+        <button
+          class="back"
+          onclick="go('library')">
+          ‹
+        </button>
+
+        <div style="flex:1">
+
+          <strong>
+            ${escapeHtml(meta.short)}
+          </strong>
+
+          <div class="muted">
+            ${escapeHtml(meta.author)}
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="section">
+
+        <div class="eyebrow">
+          ${t('reader')}
+        </div>
 
         <h2>
           ${escapeHtml(meta.short)}
@@ -868,18 +1190,32 @@ function reader() {
 
         <button
           class="primary"
-          onclick="window.open('${escapeAttribute(meta.pdf)}','_blank','noopener,noreferrer')">
+          onclick="
+            openPdf(
+              '${escapeAttribute(meta.pdf)}'
+            )
+          ">
 
-          Open PDF
+          ${t('openPdf')}
 
         </button>
 
       </div>
+
     `);
   }
 
-  if (meta.sample && !state.loadedBook) {
+
+  /*
+    Sample book loading.
+  */
+  if (
+    meta.sample &&
+    !state.loadedBook
+  ) {
+
     return layout(`
+
       <div class="top">
 
         <button
@@ -899,7 +1235,9 @@ function reader() {
           </div>
 
         </div>
+
       </div>
+
 
       <div class="working">
 
@@ -914,14 +1252,18 @@ function reader() {
         </div>
 
       </div>
+
     `);
   }
+
 
   const book = getCurrentBook();
   const chapter = currentChapter();
 
   if (!chapter) {
+
     return layout(`
+
       <div class="top">
 
         <button
@@ -941,20 +1283,26 @@ function reader() {
           </div>
 
         </div>
+
       </div>
 
       <div class="muted">
         ${t('loading')}
       </div>
+
     `);
   }
+
 
   const progress =
     book.chapters.length
       ? Math.round(
-          ((state.chapter + 1) / book.chapters.length) * 100
+          ((state.chapter + 1) /
+            book.chapters.length) *
+            100
         )
       : 0;
+
 
   return layout(`
 
@@ -985,10 +1333,13 @@ function reader() {
           save();
           render();
         ">
+
         ${state.script ? 'A अ' : 'A'}
+
       </button>
 
     </div>
+
 
     <div
       class="muted"
@@ -1011,93 +1362,120 @@ function reader() {
 
     </div>
 
+
     <div
       class="progress"
       style="margin-bottom:28px">
 
       <i style="width:${progress}%"></i>
+
     </div>
+
 
     <h2>
       ${escapeHtml(chapter.title)}
     </h2>
 
+
     <div class="section">
 
       ${
-        (chapter.verses || []).map(verse => `
-          <div
-            class="verse"
-            onclick="toggleBookmark('${escapeAttribute(verse.ref)}')">
+        (chapter.verses || [])
+          .map(verse => `
 
             <div
-              style="
-                display:flex;
-                justify-content:space-between;
-                align-items:center
+              class="verse"
+              onclick="
+                toggleBookmark(
+                  '${escapeAttribute(verse.ref)}'
+                )
               ">
 
-              <div class="ref">
-                ${escapeHtml(verse.ref)}
+              <div
+                style="
+                  display:flex;
+                  justify-content:space-between;
+                  align-items:center
+                ">
+
+                <div class="ref">
+                  ${escapeHtml(verse.ref)}
+                </div>
+
+                <div
+                  class="muted"
+                  style="font-size:11px">
+
+                  ${
+                    isBookmarked(verse.ref)
+                      ? '★'
+                      : '☆'
+                  }
+
+                </div>
+
               </div>
 
-              <div
-                class="muted"
-                style="font-size:11px">
+
+              ${
+                state.script
+                  ? `
+
+                    <div class="deva">
+                      ${escapeHtml(
+                        verse.sanskrit || ''
+                      )}
+                    </div>
+
+                    <div class="translit">
+                      ${escapeHtml(
+                        verse.transliteration || ''
+                      )}
+                    </div>
+
+                  `
+                  : ''
+              }
+
+
+              <div class="english">
 
                 ${
-                  isBookmarked(verse.ref)
-                    ? '★'
-                    : '☆'
+                  state.lang === 'sl'
+                    ? escapeHtml(
+                        verse.slovenian ||
+                        verse.english ||
+                        ''
+                      )
+                    : escapeHtml(
+                        verse.english ||
+                        ''
+                      )
                 }
 
               </div>
-            </div>
 
-            ${
-              state.script
-                ? `
-                  <div class="deva">
-                    ${escapeHtml(verse.sanskrit || '')}
-                  </div>
 
-                  <div class="translit">
-                    ${escapeHtml(verse.transliteration || '')}
-                  </div>
-                `
-                : ''
-            }
-
-            <div class="english">
               ${
-                state.lang === 'sl'
-                  ? escapeHtml(
-                      verse.slovenian ||
-                      verse.english ||
-                      ''
-                    )
-                  : escapeHtml(
-                      verse.english ||
-                      ''
-                    )
+                verse.note
+                  ? `
+                    <div class="note">
+                      ${escapeHtml(
+                        verse.note
+                      )}
+                    </div>
+                  `
+                  : ''
               }
+
             </div>
 
-            ${
-              verse.note
-                ? `
-                  <div class="note">
-                    ${escapeHtml(verse.note)}
-                  </div>
-                `
-                : ''
-            }
-
-          </div>
-        `).join('')
+          `)
+          .join('')
       }
 
     </div>
+
 
     <div
       style="
@@ -1127,6 +1505,7 @@ function reader() {
 
     </div>
 
+
     <div
       class="muted"
       style="
@@ -1137,7 +1516,9 @@ function reader() {
       ${t('bookmark')}:
       ${
         state.bookmarks.filter(
-          item => item.bookId === state.loadedBookId
+          item =>
+            item.bookId ===
+            state.loadedBookId
         ).length
       }
 
@@ -1152,48 +1533,80 @@ function reader() {
    ========================================================= */
 
 async function buildSearchIndex() {
-  if (state.searchReady || state.searchLoading) {
+
+  if (
+    state.searchReady ||
+    state.searchLoading
+  ) {
     return;
   }
 
   state.searchLoading = true;
 
   try {
-    const response = await fetch(
-      'data/sample-book.json',
-      {
-        cache: 'no-store'
-      }
-    );
+
+    const response =
+      await fetch(
+        'data/sample-book.json',
+        {
+          cache: 'no-store'
+        }
+      );
 
     if (!response.ok) {
-      throw new Error('HTTP ' + response.status);
+      throw new Error(
+        'HTTP ' + response.status
+      );
     }
 
-    const book = await response.json();
+    const book =
+      await response.json();
 
     const results = [];
 
-    (book.chapters || []).forEach((chapter, chapterIndex) => {
+    (book.chapters || [])
+      .forEach(
+        (chapter, chapterIndex) => {
 
-      (chapter.verses || []).forEach(verse => {
+          (chapter.verses || [])
+            .forEach(verse => {
 
-        results.push({
-          bookId: book.id,
-          bookTitle: book.title,
-          author: book.author,
-          chapterIndex,
-          chapterTitle: chapter.title,
-          ref: verse.ref,
-          sanskrit: verse.sanskrit || '',
-          transliteration: verse.transliteration || '',
-          english: verse.english || '',
-          slovenian: verse.slovenian || ''
-        });
+              results.push({
 
-      });
+                bookId:
+                  book.id,
 
-    });
+                bookTitle:
+                  book.title,
+
+                author:
+                  book.author,
+
+                chapterIndex,
+
+                chapterTitle:
+                  chapter.title,
+
+                ref:
+                  verse.ref,
+
+                sanskrit:
+                  verse.sanskrit || '',
+
+                transliteration:
+                  verse.transliteration || '',
+
+                english:
+                  verse.english || '',
+
+                slovenian:
+                  verse.slovenian || ''
+
+              });
+
+            });
+        }
+      );
 
     state.searchIndex = results;
     state.searchReady = true;
@@ -1205,34 +1618,60 @@ async function buildSearchIndex() {
       error
     );
 
-    const book = FALLBACK_BOOK;
+    const book =
+      FALLBACK_BOOK;
+
     const results = [];
 
-    (book.chapters || []).forEach((chapter, chapterIndex) => {
+    (book.chapters || [])
+      .forEach(
+        (chapter, chapterIndex) => {
 
-      (chapter.verses || []).forEach(verse => {
+          (chapter.verses || [])
+            .forEach(verse => {
 
-        results.push({
-          bookId: book.id,
-          bookTitle: book.title,
-          author: book.author,
-          chapterIndex,
-          chapterTitle: chapter.title,
-          ref: verse.ref,
-          sanskrit: verse.sanskrit || '',
-          transliteration: verse.transliteration || '',
-          english: verse.english || '',
-          slovenian: verse.slovenian || ''
-        });
+              results.push({
 
-      });
+                bookId:
+                  book.id,
 
-    });
+                bookTitle:
+                  book.title,
+
+                author:
+                  book.author,
+
+                chapterIndex,
+
+                chapterTitle:
+                  chapter.title,
+
+                ref:
+                  verse.ref,
+
+                sanskrit:
+                  verse.sanskrit || '',
+
+                transliteration:
+                  verse.transliteration || '',
+
+                english:
+                  verse.english || '',
+
+                slovenian:
+                  verse.slovenian || ''
+
+              });
+
+            });
+        }
+      );
 
     state.searchIndex = results;
     state.searchReady = true;
 
   } finally {
+
     state.searchLoading = false;
 
     if (state.screen === 'search') {
@@ -1241,11 +1680,13 @@ async function buildSearchIndex() {
   }
 }
 
+
 function setSearchQuery(value) {
   state.query = value;
   save();
   render();
 }
+
 
 function setSearchFilter(value) {
   state.filter = value;
@@ -1253,16 +1694,62 @@ function setSearchFilter(value) {
   render();
 }
 
+
+function getVisibleSearchResults() {
+
+  const query =
+    state.query
+      .trim()
+      .toLowerCase();
+
+  let results =
+    state.searchIndex;
+
+  if (query) {
+
+    results =
+      results.filter(item => {
+
+        const text = [
+
+          item.bookTitle,
+          item.author,
+          item.chapterTitle,
+          item.ref,
+          item.sanskrit,
+          item.transliteration,
+          item.english,
+          item.slovenian
+
+        ]
+          .join(' ')
+          .toLowerCase();
+
+        return text.includes(query);
+      });
+  }
+
+  return results;
+}
+
+
 function search() {
 
-  if (!state.searchReady && !state.searchLoading) {
+  if (
+    !state.searchReady &&
+    !state.searchLoading
+  ) {
     buildSearchIndex();
   }
+
 
   if (!state.searchReady) {
 
     return layout(`
-      <h2>${t('search')}</h2>
+
+      <h2>
+        ${t('search')}
+      </h2>
 
       <input
         class="search"
@@ -1277,36 +1764,14 @@ function search() {
         ${t('searching')}
 
       </div>
+
     `);
   }
 
-  const query = state.query
-    .trim()
-    .toLowerCase();
 
-  let results = state.searchIndex;
+  const results =
+    getVisibleSearchResults();
 
-  if (query) {
-
-    results = results.filter(item => {
-
-      const text = [
-        item.bookTitle,
-        item.author,
-        item.chapterTitle,
-        item.ref,
-        item.sanskrit,
-        item.transliteration,
-        item.english,
-        item.slovenian
-      ]
-        .join(' ')
-        .toLowerCase();
-
-      return text.includes(query);
-    });
-
-  }
 
   return layout(`
 
@@ -1314,19 +1779,25 @@ function search() {
       ${t('search')}
     </h2>
 
+
     <input
       class="search"
       value="${escapeAttribute(state.query)}"
       oninput="setSearchQuery(this.value)"
       placeholder="${t('acrossBooks')}">
 
+
     <div
       class="muted"
-      style="margin-top:8px;margin-bottom:16px">
+      style="
+        margin-top:8px;
+        margin-bottom:16px
+      ">
 
       ${t('searchHint')}
 
     </div>
+
 
     <div class="chips">
 
@@ -1335,21 +1806,30 @@ function search() {
         ['English', 'English'],
         ['Slovenian', 'Slovenščina'],
         ['Sanskrit', 'Sanskrit']
-      ].map(([value, label]) => `
+      ].map(
+        ([value, label]) => `
 
-        <button
-          class="chip ${
-            state.filter === value ? 'on' : ''
-          }"
-          onclick="setSearchFilter('${escapeAttribute(value)}')">
+          <button
+            class="chip ${
+              state.filter === value
+                ? 'on'
+                : ''
+            }"
+            onclick="
+              setSearchFilter(
+                '${escapeAttribute(value)}'
+              )
+            ">
 
-          ${label}
+            ${label}
 
-        </button>
+          </button>
 
-      `).join('')}
+        `
+      ).join('')}
 
     </div>
+
 
     <div
       class="muted"
@@ -1360,164 +1840,189 @@ function search() {
 
     </div>
 
+
     ${
       results.length
-        ? results.map((result, index) => `
 
-          <div
-            class="result"
-            onclick="openSearchResult(${index})">
+        ? results
+            .map(
+              (result, index) => `
 
-            <div class="booktitle">
-              ${escapeHtml(result.bookTitle)}
-              ·
-              ${escapeHtml(result.ref)}
-            </div>
-
-            <div class="muted">
-              ${escapeHtml(t('chapterResult'))}
-              ${result.chapterIndex + 1}
-              ·
-              ${escapeHtml(result.chapterTitle)}
-            </div>
-
-            <div
-              style="
-                font-size:13px;
-                line-height:1.55;
-                margin-top:4px
-              ">
-
-              ${
-                state.lang === 'sl'
-                  ? escapeHtml(
-                      result.slovenian ||
-                      result.english
+                <div
+                  class="result"
+                  onclick="
+                    openSearchResult(
+                      ${index}
                     )
-                  : escapeHtml(
-                      result.english
-                    )
-              }
+                  ">
 
-            </div>
+                  <div class="booktitle">
 
-            <div
-              class="muted"
-              style="
-                margin-top:7px;
-                font-size:11px
-              ">
+                    ${escapeHtml(
+                      result.bookTitle
+                    )}
 
-              ${escapeHtml(result.sanskrit)}
+                    ·
 
-            </div>
+                    ${escapeHtml(
+                      result.ref
+                    )}
 
-          </div>
+                  </div>
 
-        `).join('')
+
+                  <div class="muted">
+
+                    ${escapeHtml(
+                      t('chapterResult')
+                    )}
+
+                    ${result.chapterIndex + 1}
+
+                    ·
+
+                    ${escapeHtml(
+                      result.chapterTitle
+                    )}
+
+                  </div>
+
+
+                  <div
+                    style="
+                      font-size:13px;
+                      line-height:1.55;
+                      margin-top:4px
+                    ">
+
+                    ${
+                      state.lang === 'sl'
+                        ? escapeHtml(
+                            result.slovenian ||
+                            result.english
+                          )
+                        : escapeHtml(
+                            result.english
+                          )
+                    }
+
+                  </div>
+
+
+                  <div
+                    class="muted"
+                    style="
+                      margin-top:7px;
+                      font-size:11px
+                    ">
+
+                    ${escapeHtml(
+                      result.sanskrit
+                    )}
+
+                  </div>
+
+                </div>
+
+              `
+            )
+            .join('')
 
         : `
+
           <div class="muted">
             ${t('noResults')}
           </div>
+
         `
     }
 
   `);
 }
 
+
 function openSearchResult(index) {
 
-  const visibleResults = getVisibleSearchResults();
+  const visibleResults =
+    getVisibleSearchResults();
 
-  const result = visibleResults[index];
+  const result =
+    visibleResults[index];
 
   if (!result) {
     return;
   }
 
   state.book = 0;
-  state.loadedBookId = 'sample-book';
-  state.chapter = Number(result.chapterIndex) || 0;
-  state.screen = 'reader';
+  state.loadedBookId =
+    'sample-book';
+  state.chapter =
+    Number(result.chapterIndex) || 0;
+  state.screen =
+    'reader';
 
   save();
   render();
 
   if (
     !state.loadedBook ||
-    state.loadedBook.id !== result.bookId
+    state.loadedBook.id !==
+      result.bookId
   ) {
 
-    loadSampleBook().then(() => {
+    loadSampleBook()
+      .then(() => {
 
-      state.chapter =
-        Number(result.chapterIndex) || 0;
+        state.chapter =
+          Number(
+            result.chapterIndex
+          ) || 0;
 
-      save();
-      render();
+        save();
+        render();
 
-      scrollToVerse(result.ref);
+        scrollToVerse(
+          result.ref
+        );
 
-    });
+      });
 
   } else {
 
     setTimeout(() => {
-      scrollToVerse(result.ref);
+
+      scrollToVerse(
+        result.ref
+      );
+
     }, 100);
-
   }
 }
 
-function getVisibleSearchResults() {
-
-  const query = state.query
-    .trim()
-    .toLowerCase();
-
-  let results = state.searchIndex;
-
-  if (query) {
-
-    results = results.filter(item => {
-
-      const text = [
-        item.bookTitle,
-        item.author,
-        item.chapterTitle,
-        item.ref,
-        item.sanskrit,
-        item.transliteration,
-        item.english,
-        item.slovenian
-      ]
-        .join(' ')
-        .toLowerCase();
-
-      return text.includes(query);
-    });
-
-  }
-
-  return results;
-}
 
 function scrollToVerse(ref) {
 
   setTimeout(() => {
 
     const verses =
-      document.querySelectorAll('.verse');
+      document.querySelectorAll(
+        '.verse'
+      );
 
-    for (const verse of verses) {
+    for (
+      const verse of verses
+    ) {
 
       const reference =
-        verse.querySelector('.ref');
+        verse.querySelector(
+          '.ref'
+        );
 
       if (
         reference &&
-        reference.textContent.trim() === String(ref)
+        reference.textContent
+          .trim() ===
+          String(ref)
       ) {
 
         verse.scrollIntoView({
@@ -1525,10 +2030,13 @@ function scrollToVerse(ref) {
           block: 'center'
         });
 
-        verse.style.outline = '2px solid currentColor';
+        verse.style.outline =
+          '2px solid currentColor';
 
         setTimeout(() => {
+
           verse.style.outline = '';
+
         }, 1800);
 
         break;
@@ -1575,6 +2083,7 @@ function create() {
     `);
   }
 
+
   const formTranslations = {
 
     'Article':
@@ -1618,6 +2127,7 @@ function create() {
         : 'Class outline'
   };
 
+
   return layout(`
 
     <div class="eyebrow">
@@ -1627,6 +2137,7 @@ function create() {
     <h1>
       ${t('generateWork')}
     </h1>
+
 
     <div class="section card">
 
@@ -1642,10 +2153,13 @@ function create() {
 
           <button
             class="select ${
-              state.form === form ? 'on' : ''
+              state.form === form
+                ? 'on'
+                : ''
             }"
             onclick="
-              state.form='${escapeAttribute(form)}';
+              state.form=
+                '${escapeAttribute(form)}';
               save();
               render();
             ">
@@ -1657,7 +2171,9 @@ function create() {
         `).join('')}
 
       </div>
+
     </div>
+
 
     <div class="card">
 
@@ -1665,40 +2181,47 @@ function create() {
         ${t('sources')}
       </h3>
 
-      ${state.sources.map(index => {
+      ${state.sources
+        .map(index => {
 
-        const book = BOOKS[index];
+          const book =
+            BOOKS[index];
 
-        if (!book) {
-          return '';
-        }
+          if (!book) {
+            return '';
+          }
 
-        return `
-          <div class="source">
+          return `
 
-            <span>
-              ${escapeHtml(book.short)}
-            </span>
+            <div class="source">
 
-            <button
-              class="remove"
-              onclick="
-                state.sources=
-                  state.sources.filter(
-                    x=>x!==${index}
-                  );
-                save();
-                render();
-              ">
+              <span>
+                ${escapeHtml(
+                  book.short
+                )}
+              </span>
 
-              ${t('remove')}
+              <button
+                class="remove"
+                onclick="
+                  state.sources=
+                    state.sources.filter(
+                      x=>x!==${index}
+                    );
+                  save();
+                  render();
+                ">
 
-            </button>
+                ${t('remove')}
 
-          </div>
-        `;
+              </button>
 
-      }).join('')}
+            </div>
+
+          `;
+        })
+        .join('')}
+
 
       <button
         class="chip on"
@@ -1710,6 +2233,7 @@ function create() {
       </button>
 
     </div>
+
 
     <div class="card">
 
@@ -1723,9 +2247,12 @@ function create() {
         oninput="
           state.intent=this.value;
           save();
-        ">${escapeHtml(state.intent)}</textarea>
+        ">${escapeHtml(
+          state.intent
+        )}</textarea>
 
     </div>
+
 
     <button
       class="primary"
@@ -1739,6 +2266,7 @@ function create() {
   `);
 }
 
+
 function generate() {
 
   state.working = true;
@@ -1746,26 +2274,32 @@ function generate() {
 
   render();
 
-  const timer = setInterval(() => {
+  const timer =
+    setInterval(() => {
 
-    state.step++;
+      state.step++;
 
-    if (state.step >= 4) {
+      if (state.step >= 4) {
 
-      clearInterval(timer);
+        clearInterval(timer);
 
-      state.working = false;
+        state.working = false;
 
-      go('result');
+        go('result');
 
-    } else {
+      } else {
 
-      render();
+        render();
 
-    }
+      }
 
-  }, 650);
+    }, 650);
 }
+
+
+/* =========================================================
+   RESULT
+   ========================================================= */
 
 function result() {
 
@@ -1798,30 +2332,42 @@ function result() {
 
     </div>
 
+
     <h1>
       Taste Before Rule:
       How Rāgānugā Bhakti Begins
     </h1>
 
+
     <p class="muted">
       A draft composed from the selected library sources.
     </p>
 
+
     <div class="section">
 
       <p class="english">
+
         The Gosvāmī literature is unusually precise about where spontaneous devotion starts. It starts with a taste that appears in the heart after hearing about the moods of the residents of Vraja.
+
       </p>
 
+
       <p class="english">
+
         Viśvanātha Cakravartī makes the sequence explicit: hearing produces greed, greed produces eligibility, and practice then takes the shape of rāgānugā.
+
       </p>
 
+
       <p class="english">
+
         Continue hearing and singing, keep the association of those in whom the taste is already awake, and let the perfected identity be a matter of meditation rather than announcement.
+
       </p>
 
     </div>
+
 
     <div class="card section">
 
@@ -1834,27 +2380,36 @@ function result() {
         style="margin-top:10px">
 
         ${
-          state.sources.map(
-            (index, number) =>
-              `${number + 1}. ${
-                escapeHtml(
-                  BOOKS[index]?.short || ''
-                )
-              } — ${
-                escapeHtml(
-                  BOOKS[index]?.author || ''
-                )
-              }`
-          ).join('<br>')
+          state.sources
+            .map(
+              (index, number) =>
+                `${number + 1}. ${
+                  escapeHtml(
+                    BOOKS[index]?.short || ''
+                  )
+                } — ${
+                  escapeHtml(
+                    BOOKS[index]?.author || ''
+                  )
+                }`
+            )
+            .join('<br>')
         }
 
       </div>
 
     </div>
 
+
     <button
       class="primary"
-      onclick="toast('${escapeAttribute(t('savedToWorks'))}')">
+      onclick="
+        toast(
+          '${escapeAttribute(
+            t('savedToWorks')
+          )}'
+        )
+      ">
 
       ${t('saveWork')}
 
@@ -1870,50 +2425,122 @@ function result() {
 
 function openBookmark(index) {
 
-  const bookmark = state.bookmarks[index];
+  const bookmark =
+    state.bookmarks[index];
 
   if (!bookmark) {
     return;
   }
 
-  state.book = 0;
-  state.loadedBookId = bookmark.bookId || 'sample-book';
-  state.chapter = Number(bookmark.chapter) || 0;
-  state.screen = 'reader';
+  /*
+    If an old bookmark belongs to the sample
+    book, open it normally.
+  */
+  const bookIndex =
+    BOOKS.findIndex(
+      book =>
+        book.id ===
+        bookmark.bookId
+    );
 
-  save();
-  render();
+  if (
+    bookIndex < 0 ||
+    BOOKS[bookIndex].sample
+  ) {
 
-  loadSampleBook().then(() => {
+    state.book = 0;
 
-    const book = getCurrentBook();
+    state.loadedBookId =
+      'sample-book';
 
-    if (
-      book.chapters &&
-      book.chapters.length
-    ) {
+    state.chapter =
+      Number(
+        bookmark.chapter
+      ) || 0;
 
-      state.chapter = Math.max(
-        0,
-        Math.min(
-          state.chapter,
-          book.chapters.length - 1
-        )
-      );
-
-    } else {
-
-      state.chapter = 0;
-
-    }
+    state.screen =
+      'reader';
 
     save();
     render();
 
-    scrollToVerse(bookmark.ref);
+    loadSampleBook()
+      .then(() => {
 
-  });
+        const book =
+          getCurrentBook();
+
+        if (
+          book.chapters &&
+          book.chapters.length
+        ) {
+
+          state.chapter =
+            Math.max(
+              0,
+              Math.min(
+                state.chapter,
+                book.chapters.length - 1
+              )
+            );
+
+        }
+
+        save();
+        render();
+
+        scrollToVerse(
+          bookmark.ref
+        );
+
+      });
+
+    return;
+  }
+
+
+  /*
+    A PDF bookmark cannot currently jump to
+    an internal PDF page because the bookmark
+    only stores verse/chapter information.
+    Open the corresponding PDF instead.
+  */
+  const book =
+    BOOKS[bookIndex];
+
+  if (book.pdf) {
+
+    state.book =
+      bookIndex;
+
+    save();
+
+    openPdf(
+      book.pdf
+    );
+
+    return;
+  }
+
+
+  if (
+    Array.isArray(book.pdfs) &&
+    book.pdfs.length
+  ) {
+
+    state.book =
+      bookIndex;
+
+    state.screen =
+      'reader';
+
+    save();
+    render();
+
+    return;
+  }
 }
+
 
 function removeBookmark(index) {
 
@@ -1924,7 +2551,10 @@ function removeBookmark(index) {
     return;
   }
 
-  state.bookmarks.splice(index, 1);
+  state.bookmarks.splice(
+    index,
+    1
+  );
 
   save();
   render();
@@ -1934,15 +2564,18 @@ function removeBookmark(index) {
   }, 50);
 }
 
+
 function saved() {
 
-  const bookmarks = state.bookmarks;
+  const bookmarks =
+    state.bookmarks;
 
   return layout(`
 
     <h2>
       ${t('saved')}
     </h2>
+
 
     <div class="section">
 
@@ -1966,99 +2599,132 @@ function saved() {
 
       </div>
 
+
       ${
         bookmarks.length
-          ? bookmarks.map((bookmark, index) => `
 
-            <div
-              class="row"
-              style="
-                cursor:pointer;
-                align-items:flex-start
-              "
-              onclick="openBookmark(${index})">
+          ? bookmarks
+              .map(
+                (bookmark, index) => `
 
-              <div class="num">
-                ★
-              </div>
-
-              <div class="grow">
-
-                <div>
-                  ${escapeHtml(
-                    bookmark.bookTitle ||
-                    'Rāgānugā Bhakti — Sample Book'
-                  )}
-                </div>
-
-                <div class="muted">
-                  ${escapeHtml(
-                    bookmark.chapterTitle ||
-                    `${t('chapter')} ${Number(bookmark.chapter || 0) + 1}`
-                  )}
-                  ·
-                  ${escapeHtml(bookmark.ref || '')}
-                </div>
-
-                <div
-                  style="
-                    margin-top:7px;
-                    line-height:1.5
-                  ">
-
-                  ${
-                    state.lang === 'sl'
-                      ? escapeHtml(
-                          bookmark.slovenian ||
-                          bookmark.english ||
-                          ''
-                        )
-                      : escapeHtml(
-                          bookmark.english ||
-                          ''
-                        )
-                  }
-
-                </div>
-
-                <div
-                  style="
-                    display:flex;
-                    gap:8px;
-                    margin-top:10px
-                  ">
-
-                  <button
-                    class="chip on"
+                  <div
+                    class="row"
+                    style="
+                      cursor:pointer;
+                      align-items:flex-start
+                    "
                     onclick="
-                      event.stopPropagation();
-                      openBookmark(${index});
+                      openBookmark(
+                        ${index}
+                      )
                     ">
 
-                    ${t('openBookmark')}
+                    <div class="num">
+                      ★
+                    </div>
 
-                  </button>
 
-                  <button
-                    class="chip"
-                    onclick="
-                      event.stopPropagation();
-                      removeBookmark(${index});
-                    ">
+                    <div class="grow">
 
-                    ${t('removeBookmark')}
+                      <div>
 
-                  </button>
+                        ${escapeHtml(
+                          bookmark.bookTitle ||
+                          'Rāgānugā Bhakti — Sample Book'
+                        )}
 
-                </div>
+                      </div>
 
-              </div>
 
-            </div>
+                      <div class="muted">
 
-          `).join('')
+                        ${escapeHtml(
+                          bookmark.chapterTitle ||
+                          `${t('chapter')} ${
+                            Number(
+                              bookmark.chapter ||
+                              0
+                            ) + 1
+                          }`
+                        )}
+
+                        ·
+
+                        ${escapeHtml(
+                          bookmark.ref || ''
+                        )}
+
+                      </div>
+
+
+                      <div
+                        style="
+                          margin-top:7px;
+                          line-height:1.5
+                        ">
+
+                        ${
+                          state.lang === 'sl'
+                            ? escapeHtml(
+                                bookmark.slovenian ||
+                                bookmark.english ||
+                                ''
+                              )
+                            : escapeHtml(
+                                bookmark.english ||
+                                ''
+                              )
+                        }
+
+                      </div>
+
+
+                      <div
+                        style="
+                          display:flex;
+                          gap:8px;
+                          margin-top:10px
+                        ">
+
+                        <button
+                          class="chip on"
+                          onclick="
+                            event.stopPropagation();
+                            openBookmark(
+                              ${index}
+                            );
+                          ">
+
+                          ${t('openBookmark')}
+
+                        </button>
+
+
+                        <button
+                          class="chip"
+                          onclick="
+                            event.stopPropagation();
+                            removeBookmark(
+                              ${index}
+                            );
+                          ">
+
+                          ${t('removeBookmark')}
+
+                        </button>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                `
+              )
+              .join('')
 
           : `
+
             <div
               class="muted"
               style="padding:18px 0">
@@ -2066,10 +2732,12 @@ function saved() {
               ${t('noBookmarks')}
 
             </div>
+
           `
       }
 
     </div>
+
 
     <div class="row">
 
@@ -2088,14 +2756,17 @@ function saved() {
         </div>
 
         <div class="muted">
+
           ${state.sources.length}
           ${t('sourcesCount')}
           · ${t('draft')}
+
         </div>
 
       </div>
 
     </div>
+
 
     <div class="row">
 
@@ -2116,6 +2787,7 @@ function saved() {
       </div>
 
     </div>
+
 
     <div class="row">
 
@@ -2155,6 +2827,7 @@ function render() {
   }
 
   root.innerHTML =
+
     state.screen === 'library'
       ? library()
 
@@ -2181,27 +2854,53 @@ function render() {
    GLOBAL FUNCTIONS
    ========================================================= */
 
-window.setLanguage = setLanguage;
-window.go = go;
-window.toast = toast;
-window.openBook = openBook;
+window.setLanguage =
+  setLanguage;
 
-window.previousChapter = previousChapter;
-window.nextChapter = nextChapter;
+window.go =
+  go;
 
-window.toggleBookmark = toggleBookmark;
+window.toast =
+  toast;
 
-window.openBookmark = openBookmark;
-window.removeBookmark = removeBookmark;
+window.openBook =
+  openBook;
 
-window.setSearchQuery = setSearchQuery;
-window.setSearchFilter = setSearchFilter;
-window.openSearchResult = openSearchResult;
+window.openPdf =
+  openPdf;
 
-window.generate = generate;
+window.previousChapter =
+  previousChapter;
 
-window.save = save;
-window.render = render;
+window.nextChapter =
+  nextChapter;
+
+window.toggleBookmark =
+  toggleBookmark;
+
+window.openBookmark =
+  openBookmark;
+
+window.removeBookmark =
+  removeBookmark;
+
+window.setSearchQuery =
+  setSearchQuery;
+
+window.setSearchFilter =
+  setSearchFilter;
+
+window.openSearchResult =
+  openSearchResult;
+
+window.generate =
+  generate;
+
+window.save =
+  save;
+
+window.render =
+  render;
 
 
 /* =========================================================
