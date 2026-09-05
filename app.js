@@ -528,31 +528,7 @@ function library() {
       Rāgānugā Bhakti
     </h1>
 
-    <div
-      class="section resume"
-      onclick="openBook(0)">
-
-      <div class="eyebrow">
-        ${t('continue')}
-      </div>
-
-      <div class="title">
-        Rāgānugā Bhakti — Sample Book
-      </div>
-
-      <div class="muted">
-        Sample Edition · ${t('sampleBook')}
-      </div>
-
-      <div
-        class="progress"
-        style="margin-top:12px">
-
-        <i style="width:${getProgress(0)}%"></i>
-
-      </div>
-
-    </div>
+    
 
 
     <div class="section">
