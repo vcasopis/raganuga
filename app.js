@@ -227,6 +227,7 @@ const I18N = {
     created: 'Created',
     deleteWork: 'Delete',
     openWork: 'Open',
+    downloadWork: 'Download',
 
     aiNotConnected: 'AI generation will be connected next.'
   },
@@ -335,6 +336,7 @@ const I18N = {
     created: 'Ustvarjeno',
     deleteWork: 'Izbriši',
     openWork: 'Odpri',
+    downloadWork: 'Prenesi',
 
     aiNotConnected: 'AI generiranje bomo povezali v naslednjem koraku.'
   }
@@ -3923,11 +3925,6 @@ function saveGeneratedWork(work) {
   ];
 
 
-  /*
-   * Keep the local library manageable.
-   * The newest 20 works are kept.
-   */
-
   state.works =
     state.works.slice(
       0,
@@ -3972,6 +3969,228 @@ function formatWorkDate(
 }
 
 
+/* =========================================================
+   DOWNLOAD GENERATED WORK
+   ========================================================= */
+
+function downloadSavedWork(index) {
+
+  const work =
+    state.works[index];
+
+
+  if (!work) {
+    return;
+  }
+
+
+  const isPoem =
+    work.type === 'poem';
+
+
+  const typeLabel =
+    isPoem
+      ? (
+          state.lang === 'sl'
+            ? 'AI pesem'
+            : 'AI Poem'
+        )
+      : (
+          state.lang === 'sl'
+            ? 'AI predavanje'
+            : 'AI Lecture'
+        );
+
+
+  const title =
+    String(
+      work.title ||
+      typeLabel
+    )
+    .trim();
+
+
+  const content =
+    String(
+      work.content ||
+      ''
+    )
+    .trim();
+
+
+  const sourceList =
+    Array.isArray(
+      work.passages
+    )
+      ? work.passages
+          .map(
+            (passage, sourceIndex) => {
+
+              const book =
+                passage.bookTitle ||
+                '';
+
+              const author =
+                passage.author ||
+                '';
+
+              const page =
+                passage.page
+                  ? ` · ${
+                      state.lang === 'sl'
+                        ? 'stran'
+                        : 'page'
+                    } ${passage.page}`
+                  : '';
+
+              return (
+                `${sourceIndex + 1}. ` +
+                `${book} — ${author}` +
+                `${page}`
+              );
+
+            }
+          )
+          .join('\n')
+      : '';
+
+
+  const text = [
+
+    title,
+
+    '',
+
+    typeLabel,
+
+    '',
+
+    state.lang === 'sl'
+      ? 'Navodilo:'
+      : 'Prompt:',
+
+    work.prompt || '',
+
+    '',
+
+    '========================================',
+
+    '',
+
+    content,
+
+    '',
+
+    '========================================',
+
+    '',
+
+    state.lang === 'sl'
+      ? 'VIRI'
+      : 'SOURCES',
+
+    '',
+
+    sourceList ||
+      (
+        state.lang === 'sl'
+          ? 'Viri niso navedeni.'
+          : 'No sources listed.'
+      ),
+
+    '',
+
+    state.lang === 'sl'
+      ? `Ustvarjeno: ${formatWorkDate(work.createdAt)}`
+      : `Created: ${formatWorkDate(work.createdAt)}`
+
+  ].join('\n');
+
+
+  const blob =
+    new Blob(
+      [text],
+      {
+        type:
+          'text/plain;charset=utf-8'
+      }
+    );
+
+
+  const url =
+    URL.createObjectURL(
+      blob
+    );
+
+
+  const safeName =
+    title
+      .replace(
+        /[<>:"/\\|?*\x00-\x1F]/g,
+        ''
+      )
+      .replace(
+        /\s+/g,
+        '-'
+      )
+      .slice(
+        0,
+        100
+      )
+      .trim() ||
+    'raganuga-work';
+
+
+  const link =
+    document.createElement(
+      'a'
+    );
+
+
+  link.href =
+    url;
+
+
+  link.download =
+    safeName +
+    '.txt';
+
+
+  document.body.appendChild(
+    link
+  );
+
+
+  link.click();
+
+
+  link.remove();
+
+
+  setTimeout(
+    () => {
+
+      URL.revokeObjectURL(
+        url
+      );
+
+    },
+    1000
+  );
+
+
+  toast(
+    state.lang === 'sl'
+      ? 'Delo je preneseno.'
+      : 'Work downloaded.'
+  );
+}
+
+
+/* =========================================================
+   OPEN / DELETE SAVED WORK
+   ========================================================= */
+
 function openSavedWork(index) {
 
   const work =
@@ -4008,7 +4227,6 @@ function openSavedWork(index) {
     state.poemError =
       '';
 
-
     state.poemGenerating =
       false;
 
@@ -4041,7 +4259,6 @@ function openSavedWork(index) {
 
     state.lectureError =
       '';
-
 
     state.lectureGenerating =
       false;
@@ -4284,11 +4501,6 @@ async function generate() {
 
     }
 
-
-    /*
-     * Save the finished lecture
-     * as a separate work.
-     */
 
     saveGeneratedWork({
 
@@ -4549,11 +4761,6 @@ async function generatePoem() {
 
     }
 
-
-    /*
-     * Save the finished poem
-     * as a separate work.
-     */
 
     saveGeneratedWork({
 
@@ -6212,7 +6419,8 @@ function saved() {
                           style="
                             display:flex;
                             gap:8px;
-                            margin-top:10px
+                            margin-top:10px;
+                            flex-wrap:wrap
                           ">
 
                           <button
@@ -6226,6 +6434,25 @@ function saved() {
                             ">
 
                             ${t('openWork')}
+
+                          </button>
+
+
+                          <button
+                            type="button"
+                            class="chip"
+                            onclick="
+                              event.stopPropagation();
+                              downloadSavedWork(
+                                ${index}
+                              );
+                            ">
+
+                            ${
+                              state.lang === 'sl'
+                                ? 'Prenesi'
+                                : 'Download'
+                            }
 
                           </button>
 
@@ -6551,6 +6778,9 @@ window.setPoemPrompt =
 
 window.openSavedWork =
   openSavedWork;
+
+window.downloadSavedWork =
+  downloadSavedWork;
 
 window.removeSavedWork =
   removeSavedWork;
