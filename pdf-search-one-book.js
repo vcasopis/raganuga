@@ -1,4 +1,3 @@
-
 (async function () {
   const pdfjsLib = await import(
     'https://cdn.jsdelivr.net/npm/pdfjs-dist@6.2.108/build/pdf.min.mjs'
@@ -7,7 +6,40 @@
   pdfjsLib.GlobalWorkerOptions.workerSrc =
     'https://cdn.jsdelivr.net/npm/pdfjs-dist@6.2.108/build/pdf.worker.min.mjs';
 
-  const pdfPath = 'books/Bhakti-rasāmṛta-sindhu.pdf';
+  const BOOKS = [
+    {
+      title: 'Bhakti-rasāmṛta-sindhu',
+      file: 'books/Bhakti-rasāmṛta-sindhu.pdf'
+    },
+    {
+      title: 'Rāga-vartma-candrikā',
+      file: 'books/RagaVartmaCandrika_eng_2nd_ed.pdf'
+    },
+    {
+      title: 'Ujjvala-nīlamaṇi',
+      file: 'books/Ujjvala-nilamani-kirana_1Ed_2013.pdf'
+    },
+    {
+      title: 'Mādhurya-kādambinī',
+      file: 'books/Madhurya-kadambini-eng-1ed.pdf'
+    },
+    {
+      title: 'Prema-bhakti-candrikā',
+      file: 'books/Sri_Prema_Bhakti_Candrika.pdf'
+    },
+    {
+      title: 'Caitanya-caritāmṛta — Ādi-līlā',
+      file: 'books/Sri Caitanya-cartamrta Adi-lila.pdf'
+    },
+    {
+      title: 'Caitanya-caritāmṛta — Madhya-līlā',
+      file: 'books/Sri Caitanya-cartamrta Madhya-lila.pdf'
+    },
+    {
+      title: 'Caitanya-caritāmṛta — Antya-līlā',
+      file: 'books/Sri Caitanya-cartamrta Antya-lila.pdf'
+    }
+  ];
 
   const box = document.createElement('div');
 
@@ -27,239 +59,127 @@
   box.style.lineHeight = '1.5';
 
   box.innerHTML =
-    '<strong>PDF SEARCH TEST — pripravljam indeks ...</strong><br><br>' +
-    'Prosimo počakaj, da preberem vseh 336 strani.';
+    '<strong>PDF TEST — pripravljam vseh 8 knjig ...</strong><br><br>' +
+    'Prosimo počakaj.';
 
   document.body.appendChild(box);
 
-  function normalizeText(value) {
-    return String(value || '')
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase();
-  }
-
-  function makeSnippet(text, query) {
-    const clean = String(text || '')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    if (clean.length <= 350) {
-      return clean;
-    }
-
-    const normalized = normalizeText(clean);
-    const normalizedQuery = normalizeText(query);
-    const position = normalizedQuery
-      ? normalized.indexOf(normalizedQuery)
-      : -1;
-
-    if (position >= 0) {
-      const start = Math.max(0, position - 120);
-      const end = Math.min(clean.length, start + 350);
-
-      return (
-        (start > 0 ? '…' : '') +
-        clean.slice(start, end) +
-        (end < clean.length ? '…' : '')
-      );
-    }
-
-    return clean.slice(0, 350) + '…';
-  }
+  let totalPages = 0;
+  let totalTextPages = 0;
+  let totalCharacters = 0;
 
   try {
-    const loadingTask = pdfjsLib.getDocument({
-      url: pdfPath,
-      enableScripting: false
-    });
+    for (let bookIndex = 0; bookIndex < BOOKS.length; bookIndex++) {
+      const book = BOOKS[bookIndex];
 
-    const pdf = await loadingTask.promise;
+      box.innerHTML =
+        '<strong>PDF TEST — berem knjigo ' +
+        (bookIndex + 1) +
+        ' / ' +
+        BOOKS.length +
+        '</strong><br><br>' +
+        '<strong>' +
+        book.title +
+        '</strong><br><br>' +
+        'Pripravljam PDF ...';
 
-    const index = [];
-
-    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
-      const page = await pdf.getPage(pageNumber);
-      const content = await page.getTextContent();
-
-      const text = content.items
-        .map(item => item.str || '')
-        .join(' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-
-      if (text) {
-        index.push({
-          page: pageNumber,
-          text: text,
-          normalized: normalizeText(text)
-        });
-      }
-
-      if (
-        pageNumber === 1 ||
-        pageNumber % 25 === 0 ||
-        pageNumber === pdf.numPages
-      ) {
-        box.innerHTML =
-          '<strong>PDF SEARCH TEST — pripravljam indeks ...</strong><br><br>' +
-          'Prebrana stran: ' +
-          pageNumber +
-          ' / ' +
-          pdf.numPages +
-          '<br>' +
-          'Iskalnih strani: ' +
-          index.length;
-      }
-    }
-
-    console.log('PDF SEARCH TEST — indeks pripravljen');
-    console.log('Število vseh strani:', pdf.numPages);
-    console.log('Število indeksiranih strani:', index.length);
-
-    box.innerHTML = `
-      <strong>PDF SEARCH TEST — INDEKS PRIPRAVLJEN ✅</strong>
-      <br><br>
-
-      <div style="margin-bottom:16px;">
-        <strong>Bhakti-rasāmṛta-sindhu</strong><br>
-        ${pdf.numPages} strani · ${index.length} indeksiranih strani
-      </div>
-
-      <div style="display:flex;gap:8px;margin-bottom:16px;">
-        <input
-          id="pdf-search-input"
-          type="search"
-          placeholder="Vpiši besedo, npr. Kṛṣṇa"
-          style="
-            flex:1;
-            min-width:0;
-            padding:12px;
-            font-size:16px;
-            border:1px solid #bbb;
-            border-radius:8px;
-          "
-        >
-
-        <button
-          id="pdf-search-button"
-          style="
-            padding:12px 18px;
-            font-size:16px;
-            border:0;
-            border-radius:8px;
-            cursor:pointer;
-          "
-        >
-          Išči
-        </button>
-      </div>
-
-      <div id="pdf-search-status" style="margin-bottom:12px;"></div>
-
-      <div id="pdf-search-results"></div>
-    `;
-
-    const input = document.getElementById('pdf-search-input');
-    const button = document.getElementById('pdf-search-button');
-    const status = document.getElementById('pdf-search-status');
-    const resultsBox = document.getElementById('pdf-search-results');
-
-    function search() {
-      const query = input.value.trim();
-      const normalizedQuery = normalizeText(query);
-
-      resultsBox.innerHTML = '';
-
-      if (!normalizedQuery) {
-        status.textContent = 'Vpiši iskalni izraz.';
-        return;
-      }
-
-      const results = index.filter(item =>
-        item.normalized.includes(normalizedQuery)
-      );
-
-      status.textContent =
-        'Najdenih strani: ' + results.length;
-
-      if (!results.length) {
-        resultsBox.innerHTML =
-          '<p>Ni zadetkov za <strong>' +
-          query.replace(/</g, '&lt;') +
-          '</strong>.</p>';
-
-        return;
-      }
-
-      results.slice(0, 50).forEach(result => {
-        const row = document.createElement('div');
-
-        row.style.padding = '14px 0';
-        row.style.borderBottom = '1px solid #ddd';
-
-        const title = document.createElement('strong');
-
-        title.textContent =
-          'Bhakti-rasāmṛta-sindhu · stran ' + result.page;
-
-        const snippet = document.createElement('div');
-
-        snippet.style.marginTop = '6px';
-        snippet.textContent =
-          makeSnippet(result.text, query);
-
-        const openButton = document.createElement('button');
-
-        openButton.textContent =
-          'Odpri stran ' + result.page;
-
-        openButton.style.marginTop = '10px';
-        openButton.style.padding = '8px 12px';
-        openButton.style.cursor = 'pointer';
-
-        openButton.addEventListener('click', function () {
-          window.open(
-            pdfPath + '#page=' + result.page,
-            '_blank'
-          );
-        });
-
-        row.appendChild(title);
-        row.appendChild(snippet);
-        row.appendChild(openButton);
-
-        resultsBox.appendChild(row);
+      const loadingTask = pdfjsLib.getDocument({
+        url: book.file,
+        enableScripting: false
       });
 
-      if (results.length > 50) {
-        const more = document.createElement('p');
+      const pdf = await loadingTask.promise;
 
-        more.style.marginTop = '16px';
-        more.textContent =
-          'Prikazanih je prvih 50 zadetkov od ' +
-          results.length +
-          '.';
+      totalPages += pdf.numPages;
 
-        resultsBox.appendChild(more);
+      let bookTextPages = 0;
+      let bookCharacters = 0;
+
+      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+        const page = await pdf.getPage(pageNumber);
+        const content = await page.getTextContent();
+
+        const text = content.items
+          .map(item => item.str || '')
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        if (text) {
+          bookTextPages++;
+          totalTextPages++;
+          bookCharacters += text.length;
+          totalCharacters += text.length;
+        }
+
+        if (
+          pageNumber === 1 ||
+          pageNumber % 25 === 0 ||
+          pageNumber === pdf.numPages
+        ) {
+          box.innerHTML =
+            '<strong>PDF TEST — berem knjigo ' +
+            (bookIndex + 1) +
+            ' / ' +
+            BOOKS.length +
+            '</strong><br><br>' +
+            '<strong>' +
+            book.title +
+            '</strong><br><br>' +
+            'Stran: ' +
+            pageNumber +
+            ' / ' +
+            pdf.numPages +
+            '<br>' +
+            'Strani z besedilom v tej knjigi: ' +
+            bookTextPages +
+            '<br>' +
+            'Znakov v tej knjigi: ' +
+            bookCharacters.toLocaleString();
+        }
       }
+
+      console.log(
+        'PDF TEST:',
+        book.title,
+        pdf.numPages,
+        'strani,',
+        bookTextPages,
+        'strani z besedilom,',
+        bookCharacters,
+        'znakov'
+      );
     }
 
-    button.addEventListener('click', search);
+    box.innerHTML = `
+      <strong>PDF TEST — VSEH 8 KNJIG USPEŠNO PREBRANIH ✅</strong>
+      <br><br>
 
-    input.addEventListener('keydown', function (event) {
-      if (event.key === 'Enter') {
-        search();
-      }
-    });
+      <strong>Rezultat:</strong>
+      <br><br>
 
-    input.focus();
+      Skupaj PDF knjig: ${BOOKS.length}<br>
+      Skupaj strani: ${totalPages}<br>
+      Strani z besedilom: ${totalTextPages}<br>
+      Skupaj znakov: ${totalCharacters.toLocaleString()}<br><br>
+
+      <strong>Knjige:</strong>
+      <br><br>
+
+      ${BOOKS.map((book, index) =>
+        (index + 1) + '. ' + book.title
+      ).join('<br>')}
+
+      <br><br>
+
+      <strong>PDF.js je pripravljen za iskanje po celotni knjižnici. 🎉</strong>
+    `;
 
   } catch (error) {
-    console.error('PDF SEARCH TEST — NAPAKA ❌', error);
+    console.error('PDF TEST — NAPAKA ❌', error);
 
     box.innerHTML =
-      '<strong>PDF SEARCH TEST — NAPAKA ❌</strong><br><br>' +
+      '<strong>PDF TEST — NAPAKA ❌</strong><br><br>' +
       String(error);
   }
 })();
