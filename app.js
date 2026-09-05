@@ -200,7 +200,6 @@ const I18N = {
     pdfPage: 'PDF · page',
     openPage: 'Open page',
     indexedPages: 'Indexed pages',
-
     aiLecture: 'AI Lecture',
     chooseBooks: 'Choose books',
     selectedBooks: 'selected',
@@ -294,7 +293,6 @@ const I18N = {
     pdfPage: 'PDF · stran',
     openPage: 'Odpri stran',
     indexedPages: 'Indeksirane strani',
-
     aiLecture: 'AI predavanje',
     chooseBooks: 'Izberi knjige',
     selectedBooks: 'izbranih',
@@ -363,9 +361,10 @@ if (!Array.isArray(state.sources)) {
   state.sources = [0, 1, 2, 3];
 }
 
-if (!state.lectureLength) {
-  state.lectureLength = '20';
-}
+state.lectureLength =
+  String(
+    state.lectureLength || '20'
+  );
 
 if (typeof state.lectureTopic !== 'string') {
   state.lectureTopic = '';
@@ -500,12 +499,14 @@ function languageSelector() {
     <div class="language-selector">
 
       <button
+        type="button"
         class="chip ${state.lang === 'en' ? 'on' : ''}"
         onclick="setLanguage('en')">
         🇬🇧 EN
       </button>
 
       <button
+        type="button"
         class="chip ${state.lang === 'sl' ? 'on' : ''}"
         onclick="setLanguage('sl')">
         🇸🇮 SL
@@ -527,6 +528,7 @@ function nav() {
         ['saved', '♡', t('saved')]
       ].map(([key, icon, label]) => `
         <button
+          type="button"
           class="${state.screen === key ? 'active' : ''}"
           onclick="go('${key}')">
 
@@ -1136,6 +1138,7 @@ function reader() {
       <div class="top">
 
         <button
+          type="button"
           class="back"
           onclick="go('library')">
           ‹
@@ -1186,6 +1189,7 @@ function reader() {
           ${meta.pdfs.map(part => `
 
             <button
+              type="button"
               class="select"
               style="
                 text-align:left;
@@ -1228,6 +1232,7 @@ function reader() {
       <div class="top">
 
         <button
+          type="button"
           class="back"
           onclick="go('library')">
           ‹
@@ -1263,6 +1268,7 @@ function reader() {
         </p>
 
         <button
+          type="button"
           class="primary"
           onclick="
             openPdf(
@@ -1290,6 +1296,7 @@ function reader() {
       <div class="top">
 
         <button
+          type="button"
           class="back"
           onclick="go('library')">
           ‹
@@ -1338,6 +1345,7 @@ function reader() {
       <div class="top">
 
         <button
+          type="button"
           class="back"
           onclick="go('library')">
           ‹
@@ -1380,6 +1388,7 @@ function reader() {
     <div class="top">
 
       <button
+        type="button"
         class="back"
         onclick="go('library')">
         ‹
@@ -1398,6 +1407,7 @@ function reader() {
       </div>
 
       <button
+        type="button"
         class="chip ${state.script ? 'on' : ''}"
         onclick="
           state.script=!state.script;
@@ -1557,6 +1567,7 @@ function reader() {
       ">
 
       <button
+        type="button"
         class="chip"
         style="flex:1;padding:12px"
         onclick="previousChapter()">
@@ -1566,6 +1577,7 @@ function reader() {
       </button>
 
       <button
+        type="button"
         class="chip on"
         style="flex:1;padding:12px"
         onclick="nextChapter()">
@@ -2724,6 +2736,7 @@ function search() {
         ([value, label]) => `
 
           <button
+            type="button"
             class="chip ${
               state.filter === value
                 ? 'on'
@@ -2845,6 +2858,7 @@ function search() {
                       ? `
 
                         <button
+                          type="button"
                           class="chip on"
                           style="
                             margin-top:10px
@@ -3097,9 +3111,10 @@ function setLectureTopic(value) {
 function setLectureLength(value) {
 
   state.lectureLength =
-    value;
+    String(value);
 
   save();
+  render();
 }
 
 
@@ -3145,11 +3160,6 @@ async function generate() {
 
   try {
 
-    /*
-      Make sure the existing PDF search index
-      is ready before selecting passages.
-    */
-
     if (!state.searchReady) {
       await buildSearchIndex();
     }
@@ -3172,11 +3182,6 @@ async function generate() {
       );
 
 
-    /*
-      Only PDF pages from the selected books
-      are candidates for the lecture.
-    */
-
     let candidates =
       state.searchIndex.filter(
         row =>
@@ -3187,10 +3192,6 @@ async function generate() {
           )
       );
 
-
-    /*
-      Split the topic into meaningful words.
-    */
 
     const topicWords =
       topic
@@ -3209,11 +3210,6 @@ async function generate() {
             word.length >= 3
         );
 
-
-    /*
-      Score each PDF page according to how strongly
-      it matches the requested lecture topic.
-    */
 
     candidates =
       candidates.map(
@@ -3251,11 +3247,6 @@ async function generate() {
           );
 
 
-          /*
-            Strong bonus when the complete topic
-            occurs in the page text.
-          */
-
           if (
             topic &&
             text.includes(topic)
@@ -3265,11 +3256,6 @@ async function generate() {
 
           }
 
-
-          /*
-            Bonus for book title or author matches
-            because users may include them in the topic.
-          */
 
           const titleText =
             normalizeSearchText(
@@ -3340,10 +3326,6 @@ async function generate() {
         );
 
 
-    /*
-      Choose a manageable set of the best pages.
-    */
-
     const selected =
       candidates
         .slice(0, 24)
@@ -3402,11 +3384,6 @@ async function generate() {
     save();
     render();
 
-
-    /*
-      Send the selected source passages
-      to the secure Cloudflare Worker.
-    */
 
     const response =
       await fetch(
@@ -3608,6 +3585,7 @@ function create() {
             return `
 
               <button
+                type="button"
                 class="select ${selected ? 'on' : ''}"
                 style="
                   text-align:left;
@@ -3721,8 +3699,10 @@ function create() {
           ([value, label]) => `
 
             <button
+              type="button"
               class="select ${
-                state.lectureLength === value
+                String(state.lectureLength) ===
+                String(value)
                   ? 'on'
                   : ''
               }"
@@ -3755,6 +3735,7 @@ function create() {
         style="margin-top:10px">
 
         <button
+          type="button"
           class="chip ${
             state.lang === 'sl'
               ? 'on'
@@ -3769,6 +3750,7 @@ function create() {
         </button>
 
         <button
+          type="button"
           class="chip ${
             state.lang === 'en'
               ? 'on'
@@ -3788,6 +3770,7 @@ function create() {
 
 
     <button
+      type="button"
       class="primary"
       onclick="generate()">
 
@@ -3937,6 +3920,7 @@ function result() {
       <div class="top">
 
         <button
+          type="button"
           class="back"
           onclick="go('create')">
           ‹
@@ -3973,6 +3957,7 @@ function result() {
 
 
       <button
+        type="button"
         class="primary"
         onclick="generate()">
 
@@ -3989,6 +3974,7 @@ function result() {
     <div class="top">
 
       <button
+        type="button"
         class="back"
         onclick="go('create')">
         ‹
@@ -4100,6 +4086,7 @@ function result() {
 
 
     <button
+      type="button"
       class="primary"
       onclick="go('create')">
 
@@ -4374,6 +4361,7 @@ function saved() {
                         ">
 
                         <button
+                          type="button"
                           class="chip on"
                           onclick="
                             event.stopPropagation();
@@ -4388,6 +4376,7 @@ function saved() {
 
 
                         <button
+                          type="button"
                           class="chip"
                           onclick="
                             event.stopPropagation();
